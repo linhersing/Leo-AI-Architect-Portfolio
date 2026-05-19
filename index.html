@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>凌鶴昇 Leo Ling | AI Architect Portfolio</title>
+  <meta name="description" content="凌鶴昇 Leo Ling 的 AI 數位整合架構師個人作品集測試頁。">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111827;
+      --muted: #667085;
+      --soft: #f5f7fa;
+      --line: #e3e7ee;
+      --panel: #ffffff;
+      --teal: #0f766e;
+      --teal-dark: #134e4a;
+      --gold: #c68b2e;
+      --coral: #d86f55;
+      --shadow: 0 22px 70px rgba(17, 24, 39, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #fbfcfd;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(227, 231, 238, 0.8);
+      background: rgba(251, 252, 253, 0.86);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      width: min(1180px, calc(100% - 32px));
+      min-height: 68px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--teal-dark);
+      font-weight: 900;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #475467;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+    }
+
+    .nav-links a:hover {
+      color: var(--teal);
+    }
+
+    .hero {
+      min-height: calc(100vh - 68px);
+      display: grid;
+      align-items: center;
+      padding: 54px 0 60px;
+      background:
+        linear-gradient(90deg, rgba(251, 252, 253, 0.92) 0%, rgba(251, 252, 253, 0.72) 44%, rgba(17, 24, 39, 0.24) 100%),
+        url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=84") center / cover;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-inner {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      gap: 54px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      margin: 0 0 18px;
+      padding: 7px 12px;
+      border: 1px solid rgba(15, 118, 110, 0.22);
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    h1 {
+      max-width: 860px;
+      margin: 0;
+      font-size: clamp(44px, 6.8vw, 86px);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 690px;
+      margin: 24px 0 0;
+      color: #344054;
+      font-size: clamp(18px, 2vw, 22px);
+      font-weight: 500;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 20px;
+      border: 1px solid var(--teal-dark);
+      border-radius: 8px;
+      color: #fff;
+      background: var(--teal-dark);
+      text-decoration: none;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(19, 78, 74, 0.18);
+    }
+
+    .button.secondary {
+      color: var(--teal-dark);
+      background: rgba(255, 255, 255, 0.74);
+      box-shadow: none;
+    }
+
+    .signal-panel {
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: 8px;
+      color: #fff;
+      background: rgba(17, 24, 39, 0.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .signal-panel p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 14px;
+    }
+
+    .signal-panel strong {
+      display: block;
+      margin: 10px 0 18px;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    .signal-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .signal {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .signal b {
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .signal span {
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 14px;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    section {
+      padding: 78px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.55fr);
+      gap: 40px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+
+    .label {
+      margin: 0 0 10px;
+      color: var(--coral);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.14;
+      letter-spacing: 0;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .expertise-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      min-height: 250px;
+      position: relative;
+      overflow: hidden;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 16px 46px rgba(17, 24, 39, 0.06);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--teal), var(--gold), var(--coral));
+    }
+
+    .card-number {
+      color: rgba(15, 118, 110, 0.24);
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .card h3 {
+      margin: 34px 0 12px;
+      font-size: 22px;
+      line-height: 1.28;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .work-list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .work-item {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr) 170px;
+      gap: 24px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .work-index {
+      color: var(--teal);
+      font-weight: 900;
+    }
+
+    .work-item h3 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.28;
+    }
+
+    .work-item p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .tag {
+      width: fit-content;
+      padding: 7px 10px;
+      border: 1px solid rgba(198, 139, 46, 0.3);
+      border-radius: 999px;
+      color: #7a541b;
+      background: #fff8eb;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .profile-band {
+      display: grid;
+      grid-template-columns: minmax(0, 0.88fr) minmax(320px, 0.62fr);
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .statement {
+      padding: 38px;
+      border-radius: 8px;
+      color: #fff;
+      background: #111827;
+    }
+
+    .statement h2 {
+      max-width: 780px;
+    }
+
+    .statement p {
+      max-width: 720px;
+      margin: 22px 0 0;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 18px;
+    }
+
+    .facts {
+      display: grid;
+      gap: 14px;
+    }
+
+    .fact {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .fact b {
+      display: block;
+      color: var(--teal-dark);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .fact span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .contact {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: center;
+      padding-bottom: 74px;
+    }
+
+    .contact .lead {
+      margin-top: 14px;
+      font-size: 18px;
+    }
+
+    .footer {
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 0;
+      }
+
+      .nav-links {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 42px 0 52px;
+      }
+
+      .hero-inner,
+      .section-head,
+      .profile-band,
+      .contact {
+        grid-template-columns: 1fr;
+      }
+
+      .signal-panel {
+        max-width: 520px;
+      }
+
+      .expertise-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .work-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .tag {
+        white-space: normal;
+      }
+
+      .statement {
+        padding: 28px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .brand {
+        white-space: normal;
+      }
+
+      .nav-links {
+        gap: 12px;
+        font-size: 13px;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      section {
+        padding: 58px 0;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="主選單">
+      <div class="brand">
+        <span class="brand-mark">L</span>
+        <span>Leo Ling | AI Architect</span>
+      </div>
+      <div class="nav-links">
+        <a href="#expertise">專長</a>
+        <a href="#projects">作品</a>
+        <a href="#profile">定位</a>
+        <a href="#contact">聯絡</a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">AI 數位整合架構師 / 創意總監</p>
+        <h1>把生成式 AI、數位孿生與建築流程整合成可落地的工作系統</h1>
+        <p class="lead">這是一個 GitHub Pages 測試頁面。放到你的 repository 根目錄後，它就會以公開網址呈現，適合先驗證平台部署流程。</p>
+        <div class="actions">
+          <a class="button" href="#projects">查看測試作品</a>
+          <a class="button secondary" href="https://github.com/linhersing/Leo-AI-Architect-Portfolio">回到 GitHub</a>
+        </div>
+      </div>
+
+      <aside class="signal-panel" aria-label="作品集摘要">
+        <p>Portfolio Preview</p>
+        <strong>面向建築、AI 與數位轉型的個人品牌入口</strong>
+        <p>這一版先聚焦「質感、可信任、可公開展示」。之後可以再補上作品圖片、案例頁、履歷 PDF 與聯絡表單。</p>
+        <div class="signal-list">
+          <div class="signal">
+            <b>14+</b>
+            <span>年設計與產業整合經驗</span>
+          </div>
+          <div class="signal">
+            <b>AI</b>
+            <span>生成式工具、Prompt 與流程架構</span>
+          </div>
+          <div class="signal">
+            <b>DT</b>
+            <span>Digital Twin 與建築協作研究</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <main>
+    <section id="expertise">
+      <div class="section-head">
+        <div>
+          <p class="label">Expertise</p>
+          <h2>把複雜技術整理成團隊真的用得上的流程</h2>
+        </div>
+        <p class="section-copy">從 AI 工具選型、視覺化提案到數位孿生應用，把技術能力轉譯成可被理解、可被採用、可被持續迭代的工作系統。</p>
+      </div>
+
+      <div class="expertise-grid">
+        <article class="card">
+          <div class="card-number">01</div>
+          <h3>AI 工作流整合</h3>
+          <p>將 Prompt Engineering、知識管理與自動化流程組合成團隊能穩定使用的工作方法。</p>
+        </article>
+        <article class="card">
+          <div class="card-number">02</div>
+          <h3>建築與數位孿生</h3>
+          <p>以建築設計背景串接 3D、BIM、視覺化與 Digital Twin 的應用場景。</p>
+        </article>
+        <article class="card">
+          <div class="card-number">03</div>
+          <h3>品牌與內容策略</h3>
+          <p>把專業經歷整理成清楚的個人品牌敘事，讓客戶快速理解你的價值。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="projects">
+      <div class="section-head">
+        <div>
+          <p class="label">Selected Demos</p>
+          <h2>測試作品區</h2>
+        </div>
+        <p class="section-copy">先用三個示範案例建立網站架構。等你確認風格後，我們可以把每一項擴充成正式作品頁。</p>
+      </div>
+
+      <div class="work-list">
+        <article class="work-item">
+          <div class="work-index">Demo 01</div>
+          <div>
+            <h3>AI 建築提案流程</h3>
+            <p>示範如何從需求訪談、概念草案、視覺參考到簡報產出建立一套 AI 輔助流程。</p>
+          </div>
+          <div class="tag">AI Workflow</div>
+        </article>
+        <article class="work-item">
+          <div class="work-index">Demo 02</div>
+          <div>
+            <h3>數位孿生資料整合</h3>
+            <p>展示建築模型、現場資訊與營運資料如何被整理成可追蹤的數位介面。</p>
+          </div>
+          <div class="tag">Digital Twin</div>
+        </article>
+        <article class="work-item">
+          <div class="work-index">Demo 03</div>
+          <div>
+            <h3>個人作品集網站</h3>
+            <p>這個頁面就是第一版測試，用來確認 GitHub Pages 是否能公開瀏覽。</p>
+          </div>
+          <div class="tag">GitHub Pages</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="profile">
+      <div class="profile-band">
+        <div class="statement">
+          <p class="label">Positioning</p>
+          <h2>跨域 AI 數位整合架構師，專注生成式 AI 與數位孿生的實務落地。</h2>
+          <p>我想把 AI 技術與建築美學結合，創造具備數位主權的未來空間。這個網站會是作品、研究、服務與合作機會的公開入口。</p>
+        </div>
+        <div class="facts" aria-label="專業摘要">
+          <div class="fact">
+            <b>14 年</b>
+            <span>設計產業經驗，含海外大型專案執行。</span>
+          </div>
+          <div class="fact">
+            <b>HX ZIon</b>
+            <span>構組化角色引擎、專業 AI 與專業領域高效對話。</span>
+          </div>
+          <div class="fact">
+            <b>Digital Twin</b>
+            <span>專注建築協作中的生成式 AI 與數位孿生應用。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <div>
+        <p class="label">Next Step</p>
+        <h2>開始連結</h2>
+        <p class="lead">等這個測試頁成功上線後，就可以再逐步加入作品圖片、服務項目、履歷、案例頁與聯絡表單。</p>
+      </div>
+      <a class="button" href="mailto:hello@example.com">聯絡我</a>
+    </section>
+
+    <footer class="footer">
+      © 2026 Leo Ling. GitHub Pages deployment test.
+    </footer>
+  </main>
+</body>
+</html>
