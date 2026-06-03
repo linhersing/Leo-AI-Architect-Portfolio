@@ -7,9 +7,8 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%233d6f35'/%3E%3Cpath d='M8 42h48v12H8z' fill='%23d8b24a'/%3E%3Cpath d='M14 38 32 18l18 20z' fill='%23f3dd76'/%3E%3Cpath d='M23 38h18v16H23z' fill='%23885828'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./styles.css" />
   <style>
-    .village-text-map{margin-top:14px;padding:14px;border:1px solid rgba(100,70,34,.22);border-radius:14px;background:rgba(255,248,220,.92);box-shadow:0 10px 24px rgba(83,55,25,.12)}
-    .village-text-map h3{margin:0 0 10px;font-size:1rem;color:#5b3b18}.text-node-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.text-node{display:grid;gap:4px;padding:10px;border:1px solid rgba(93,66,32,.18);border-radius:12px;background:#fffaf0;color:#3d2a12;text-align:left}.text-node strong{font-size:.95rem}.text-node span{font-size:.82rem;line-height:1.35;color:#6a4c24}.text-node[data-jump],.text-node[data-building]{cursor:pointer}.text-node[data-jump]:hover,.text-node[data-building]:hover{border-color:#b9822e;transform:translateY(-1px)}
-    @media (max-width:768px){.text-node-grid{grid-template-columns:1fr}.village-text-map{margin:10px 0 0;padding:12px}.village-text-map h3{font-size:.95rem}.text-node{min-height:48px}}
+    .village-text-map{margin:12px 0;padding:12px;border:1px solid rgba(100,70,34,.22);border-radius:12px;background:rgba(255,248,220,.92)}
+    .text-node-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.text-node{display:grid;gap:4px;padding:10px;border:1px solid rgba(93,66,32,.18);border-radius:10px;background:#fffaf0;color:#3d2a12;text-align:left}.text-node span{font-size:.82rem;color:#6a4c24}@media(max-width:768px){.text-node-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -40,85 +39,67 @@
       </aside>
 
       <main class="content">
-        <div id="notice" class="notice" role="status">歡迎回到邊境村莊。先升級一塊資源田，再去地圖偵察綠洲。</div>
+        <div id="notice" class="notice" role="status">歡迎回到邊境村莊。正式進度會同步到 Google Sheets；localStorage 只作為本機備用存檔。</div>
 
         <section id="village" class="view active-view">
           <div class="hero-panel">
             <div class="hero-copy">
               <p class="eyebrow">你的據點</p><h2>黎明河谷</h2>
-              <p>圖片只是村莊概念圖；真正可操作的位置在下方文字清單。先進入資源田升級，再到兵營訓練士兵。</p>
+              <p>圖片只是村莊概念圖；主要操作請使用下方文字區、資源田、兵營與地圖。</p>
               <dl class="quick-stats"><div><dt>村莊</dt><dd>你的村莊</dd></div><div><dt>勝率</dt><dd id="winRate">0%</dd></div><div><dt>本機自動存檔</dt><dd id="lastSavedMini">尚無</dd></div></dl>
             </div>
             <div id="villageArt" class="village-art" aria-label="村莊示意圖">
               <span class="sun"></span><span class="river"></span><span class="wall"></span>
-              <button type="button" class="building-hotspot keep" data-building="main" aria-label="進入主樓"><span>🏛️</span><b>主樓</b></button>
-              <button type="button" class="building-hotspot house h1" data-building="warehouse" aria-label="進入倉庫"><span>📦</span><b>倉庫</b></button>
-              <button type="button" class="building-hotspot house h2" data-building="barracks" aria-label="進入兵營"><span>⚔️</span><b>兵營</b></button>
-              <button type="button" class="building-hotspot house h3" data-building="rally" aria-label="進入集結點"><span>🚩</span><b>集結點</b></button>
+              <button type="button" class="building-hotspot keep" data-building="main"><span>🏛️</span><b>主樓</b></button>
+              <button type="button" class="building-hotspot house h1" data-building="warehouse"><span>📦</span><b>倉庫</b></button>
+              <button type="button" class="building-hotspot house h2" data-building="barracks"><span>⚔️</span><b>兵營</b></button>
+              <button type="button" class="building-hotspot house h3" data-building="rally"><span>🚩</span><b>集結點</b></button>
               <span class="trees t1"></span><span class="trees t2"></span>
-              <button type="button" class="resource-hotspot field-patch p1" data-field-jump="wood_0" aria-label="前往伐木場升級"><span>🪵</span><b>伐木場</b></button>
-              <button type="button" class="resource-hotspot field-patch p2" data-field-jump="crop_12" aria-label="前往農田升級"><span>🌾</span><b>農田</b></button>
+              <button type="button" class="resource-hotspot field-patch p1" data-field-jump="wood_0"><span>🪵</span><b>伐木場</b></button>
+              <button type="button" class="resource-hotspot field-patch p2" data-field-jump="crop_12"><span>🌾</span><b>農田</b></button>
             </div>
           </div>
 
           <section class="village-text-map" aria-label="文字版村莊操作區">
             <h3>文字版可操作區</h3>
             <div class="text-node-grid">
-              <button type="button" class="text-node" data-building="main"><strong>🏛️ 主樓</strong><span>查看村莊核心建築，之後可作為建設管理中心。</span></button>
-              <button type="button" class="text-node" data-building="warehouse"><strong>📦 倉庫</strong><span>提高資源上限，避免木材、泥土、鐵礦、穀物滿倉浪費。</span></button>
-              <button type="button" class="text-node" data-building="barracks"><strong>⚔️ 兵營</strong><span>訓練棍棒兵與矛兵，準備攻擊綠洲或防守敵襲。</span></button>
-              <button type="button" class="text-node" data-building="rally"><strong>🚩 集結點</strong><span>出兵前的集合位置。要攻擊敵人時，先去地圖選目標。</span></button>
-              <button type="button" class="text-node" data-building="wall"><strong>🧱 城門與城牆</strong><span>提高防守；敵人的衝撞車會優先破壞這裡。</span></button>
-              <button type="button" class="text-node" data-jump="resources"><strong>🪵 資源田</strong><span>點這裡看全部資源田，選一塊升級取得更高產量。</span></button>
-              <button type="button" class="text-node" data-jump="training"><strong>🛡️ 訓練士兵</strong><span>資源足夠後訓練士兵，防守敵襲或外出攻擊。</span></button>
-              <button type="button" class="text-node" data-view="map"><strong>🗺️ 前往地圖</strong><span>選擇綠洲、野獸營地或電腦敵人據點。</span></button>
+              <button type="button" class="text-node" data-building="main"><strong>🏛️ 主樓</strong><span>查看村莊核心建築。</span></button>
+              <button type="button" class="text-node" data-building="warehouse"><strong>📦 倉庫</strong><span>提高資源上限。</span></button>
+              <button type="button" class="text-node" data-building="barracks"><strong>⚔️ 兵營</strong><span>訓練士兵。</span></button>
+              <button type="button" class="text-node" data-building="rally"><strong>🚩 集結點</strong><span>出兵前往地圖。</span></button>
+              <button type="button" class="text-node" data-building="wall"><strong>🧱 城門與城牆</strong><span>抵抗衝撞車。</span></button>
+              <button type="button" class="text-node" data-jump="resources"><strong>🪵 資源田</strong><span>升級資源產量。</span></button>
+              <button type="button" class="text-node" data-jump="training"><strong>🛡️ 訓練士兵</strong><span>補兵與防守。</span></button>
+              <button type="button" class="text-node" data-view="map"><strong>🗺️ 前往地圖</strong><span>攻擊綠洲或電腦據點。</span></button>
             </div>
           </section>
 
-          <div class="village-mode-bar" aria-label="村莊快速切換"><button class="village-mode active" data-village-panel="buildings">🏘️ 建築</button><button class="village-mode" data-village-panel="resources">🪵 資源</button><button class="village-mode" data-village-panel="training">⚔️ 訓練</button><span class="village-coach">圖片看不清楚時，直接用上方文字版操作區。</span></div>
-
-          <div class="village-workbench" aria-label="村莊內部建築">
-            <article class="panel building-detail-panel"><div class="section-head inline-head"><div><p class="eyebrow">村內操作</p><h2>建築詳情</h2></div><span class="click-chip">點村莊圖或文字操作區</span></div><div id="buildingDetail" class="building-detail"></div></article>
-            <article class="panel building-list-panel"><div class="section-head inline-head"><div><p class="eyebrow">可點擊</p><h2>村內建築</h2></div></div><div id="buildingGrid" class="building-grid"></div></article>
-          </div>
-
-          <div id="resourcePanel" class="village-panel resource-panel"><div class="section-head"><div><p class="eyebrow">可互動</p><h2>資源田</h2></div><div class="button-row compact-row"><button id="collectBtn">🌿 收成 / 更新資源</button><button id="simulateHourBtn">⏩ 模擬 1 小時</button></div></div><div id="fieldGrid" class="field-grid" aria-label="資源田"></div></div>
+          <div class="village-mode-bar"><button class="village-mode active" data-village-panel="buildings">🏘️ 建築</button><button class="village-mode" data-village-panel="resources">🪵 資源</button><button class="village-mode" data-village-panel="training">⚔️ 訓練</button><span class="village-coach">先升資源，再訓練士兵。</span></div>
+          <div class="village-workbench"><article class="panel building-detail-panel"><div class="section-head inline-head"><div><p class="eyebrow">村內操作</p><h2>建築詳情</h2></div><span class="click-chip">點村莊圖或文字操作區</span></div><div id="buildingDetail" class="building-detail"></div></article><article class="panel building-list-panel"><div class="section-head inline-head"><div><p class="eyebrow">可點擊</p><h2>村內建築</h2></div></div><div id="buildingGrid" class="building-grid"></div></article></div>
+          <div id="resourcePanel" class="village-panel resource-panel"><div class="section-head"><div><p class="eyebrow">可互動</p><h2>資源田</h2></div><div class="button-row compact-row"><button id="collectBtn">🌿 收成 / 更新資源</button><button id="simulateHourBtn">⏩ 模擬 1 小時</button></div></div><div id="fieldGrid" class="field-grid"></div></div>
           <div id="trainingPanel" class="village-panel training-panel"><div class="section-head compact"><div><p class="eyebrow">兵營</p><h2>訓練士兵</h2></div><p class="section-hint">目前士兵：<strong id="villageTroopCount">0</strong></p></div><div id="trainingGridVillage" class="training-grid"></div></div>
         </section>
 
-        <section id="map" class="view"><div class="split map-split"><div><div class="section-head"><div><p class="eyebrow">Step 1 / Step 2</p><h2>世界地圖</h2></div></div><div class="map-help">點擊 🌳 綠洲或 🐾 野獸營地後，下方會出現出兵面板。</div><div class="map-scroll"><div id="mapGrid" class="map-grid" aria-label="地圖方格"></div></div></div><aside class="panel target-panel"><div class="step-strip" aria-label="出兵流程"><span class="step-pill done">1 前往地圖</span><span id="stepSelect" class="step-pill">2 選目標</span><span id="stepAttack" class="step-pill">3 攻擊</span></div><h2>出兵攻擊</h2><div id="targetCard" class="target-card">請先點擊地圖上的綠洲或野獸營地。</div><div class="send-grid"><label>棍棒兵<input id="sendClub" type="number" min="0" value="4" /></label><label>矛兵<input id="sendSpear" type="number" min="0" value="1" /></label></div><button id="attackBtn" class="primary full">⚔️ 攻擊目標</button><div id="battleResult" class="battle-result muted-result">尚未交戰。</div></aside></div></section>
+        <section id="map" class="view"><div class="split map-split"><div><div class="section-head"><div><p class="eyebrow">Step 1 / Step 2</p><h2>世界地圖</h2></div></div><div class="map-help">點擊 🌳 綠洲或 🐾 野獸營地後，下方會出現出兵面板。</div><div class="map-scroll"><div id="mapGrid" class="map-grid"></div></div></div><aside class="panel target-panel"><div class="step-strip"><span class="step-pill done">1 前往地圖</span><span id="stepSelect" class="step-pill">2 選目標</span><span id="stepAttack" class="step-pill">3 攻擊</span></div><h2>出兵攻擊</h2><div id="targetCard" class="target-card">請先點擊地圖上的綠洲或野獸營地。</div><div class="send-grid"><label>棍棒兵<input id="sendClub" type="number" min="0" value="4" /></label><label>矛兵<input id="sendSpear" type="number" min="0" value="1" /></label></div><button id="attackBtn" class="primary full">⚔️ 攻擊目標</button><div id="battleResult" class="battle-result muted-result">尚未交戰。</div></aside></div></section>
 
         <section id="military" class="view"><div class="section-head"><div><p class="eyebrow">部隊管理</p><h2>軍事</h2></div></div><div class="split"><article class="panel"><h2>目前兵力</h2><div id="troopSummary" class="troop-summary"></div></article><article class="panel"><h2>訓練士兵</h2><div id="trainingGridMilitary" class="training-grid"></div><p class="hint">出兵請到「地圖」選擇目標；這裡負責補兵與防守準備。</p></article></div></section>
         <section id="reports" class="view"><div class="section-head"><div><p class="eyebrow">軍事紀錄</p><h2>戰報</h2></div></div><ol id="reportList" class="report-list"></ol></section>
-        <section id="save" class="view"><div class="section-head"><div><p class="eyebrow">自動備份</p><h2>存檔設定</h2></div></div><div class="split"><article class="panel"><h2>Google Sheets 雲端同步</h2><p id="cloudSyncStatus" class="sync-status">目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。</p><label>Apps Script endpoint<input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" /></label><label>Sync token<input id="tokenInput" type="password" placeholder="如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組" /></label><div class="button-row"><button id="saveEndpointBtn">💾 儲存設定</button><button id="loadCloudBtn">☁️ 載入雲端存檔</button><button id="syncSheetBtn" class="primary">☁️ 立即同步</button></div><p id="saveStatus" class="status-line">尚未同步。</p></article><article class="panel"><h2>本機自動存檔</h2><p>升級、訓練、攻擊、敵襲結果會自動寫入 localStorage；每 30 秒也會自動保存一次。</p><div class="save-meter"><span>本機自動存檔</span><strong id="localSaveStatus">尚無</strong></div><div class="save-meter"><span>雲端同步</span><strong id="cloudStatusBadge">未設定</strong></div><div class="button-row"><button id="saveLocalBtn">💾 立即本機存檔</button><button id="exportBtn">📦 匯出 JSON</button><button id="resetBtn" class="danger">🧹 重置遊戲</button></div><p class="hint">最近存檔：<span id="lastSaved">尚無</span></p></article></div></section>
+        <section id="save" class="view"><div class="section-head"><div><p class="eyebrow">Google Sheets 正式存檔</p><h2>存檔設定</h2></div></div><div class="split"><article class="panel"><h2>Google Sheets 雲端同步</h2><p id="cloudSyncStatus" class="sync-status">目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。</p><label>Apps Script endpoint<input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" /></label><label>Sync token<input id="tokenInput" type="password" placeholder="如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組" /></label><div class="button-row"><button id="saveEndpointBtn">💾 儲存設定</button><button id="loadCloudBtn">☁️ 載入雲端存檔</button><button id="syncSheetBtn" class="primary">☁️ 立即同步</button></div><p id="saveStatus" class="status-line">尚未同步。</p></article><article class="panel"><h2>本機備用存檔</h2><p>localStorage 只作為本機備用；正式進度請以 Google Sheets 為準。</p><div class="save-meter"><span>本機存檔</span><strong id="localSaveStatus">尚無</strong></div><div class="save-meter"><span>雲端同步</span><strong id="cloudStatusBadge">未設定</strong></div><div class="button-row"><button id="saveLocalBtn">💾 立即本機存檔</button><button id="exportBtn">📦 匯出 JSON</button><button id="resetBtn" class="danger">🧹 重置遊戲</button></div><p class="hint">最近本機存檔：<span id="lastSaved">尚無</span></p></article></div></section>
       </main>
     </div>
   </div>
   <script src="./app.js"></script>
   <script src="./building.js"></script>
   <script src="./siege-addon.js"></script>
+  <script src="./cloud-sync-addon.js"></script>
   <script>
     document.addEventListener('click', function (event) {
       const textNode = event.target.closest('.text-node');
       if (!textNode) return;
-      if (textNode.dataset.view) {
-        document.querySelector(`.nav[data-view="${textNode.dataset.view}"]`)?.click();
-        return;
-      }
-      if (textNode.dataset.jump === 'resources') {
-        document.querySelector('[data-village-panel="resources"]')?.click();
-        document.getElementById('resourcePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-      if (textNode.dataset.jump === 'training') {
-        document.querySelector('[data-village-panel="training"]')?.click();
-        document.getElementById('trainingPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-      if (textNode.dataset.building) {
-        document.querySelector(`[data-building="${textNode.dataset.building}"]`)?.click();
-        document.querySelector('.building-detail-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      if (textNode.dataset.view) return document.querySelector(`.nav[data-view="${textNode.dataset.view}"]`)?.click();
+      if (textNode.dataset.jump === 'resources') { document.querySelector('[data-village-panel="resources"]')?.click(); return document.getElementById('resourcePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      if (textNode.dataset.jump === 'training') { document.querySelector('[data-village-panel="training"]')?.click(); return document.getElementById('trainingPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      if (textNode.dataset.building) { document.querySelector(`[data-building="${textNode.dataset.building}"]`)?.click(); document.querySelector('.building-detail-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     });
   </script>
 </body>
