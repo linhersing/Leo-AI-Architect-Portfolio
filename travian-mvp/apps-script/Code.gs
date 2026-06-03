@@ -27,13 +27,17 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  const params = (e && e.parameter) || {};
   try {
-    const action = e && e.parameter && e.parameter.action;
-    if (SECRET_TOKEN && e && e.parameter && e.parameter.token !== SECRET_TOKEN) return json({ ok: false, error: 'Invalid token' });
-    if (action === 'loadState') return json(loadState());
-    return json(setup());
+    if (SECRET_TOKEN && params.token !== SECRET_TOKEN) return respond_(params, { ok: false, error: 'Invalid token' });
+
+    let result;
+    if (params.action === 'loadState') result = loadState();
+    else result = setup();
+
+    return respond_(params, result);
   } catch (error) {
-    return json({ ok: false, error: String(error.message || error) });
+    return respond_(params, { ok: false, error: String(error.message || error) });
   }
 }
 
@@ -175,6 +179,19 @@ function parsePayload_(e) {
   return JSON.parse((e && e.postData && e.postData.contents) || '{}');
 }
 
+function respond_(params, data) {
+  if (params && params.callback) return jsonp_(params.callback, data);
+  return json(data);
+}
+
 function json(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function jsonp_(callback, data) {
+  const safeCallback = String(callback || '').replace(/[^\w.$]/g, '');
+  if (!safeCallback) return json(data);
+  return ContentService
+    .createTextOutput(safeCallback + '(' + JSON.stringify(data) + ');')
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
