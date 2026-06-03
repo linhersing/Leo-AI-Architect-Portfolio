@@ -1,23 +1,233 @@
 <!doctype html>
-<html lang='zh-Hant'>
-<head>
-<meta charset='utf-8'>
-<meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>邊境村莊</title>
-<style>
-:root{--ink:#26301f;--muted:#66705b;--line:#d8c9a3;--paper:#fff8e5;--green:#5f8d3d;--dark:#2f6438;--wood:#8b5426;--clay:#b35d39;--iron:#748083;--crop:#c4a52d;--danger:#b63b2e}*{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--ink);font-family:Arial,'Microsoft JhengHei',sans-serif;background:radial-gradient(circle at 20% 10%,#fff,transparent 26%),linear-gradient(135deg,#e5efd2,#f8edcf 55%,#dcebcf)}button,input{font:inherit}button{min-height:38px;border:1px solid #9f8350;border-radius:8px;padding:8px 12px;background:linear-gradient(#fff7d9,#dfc47b);box-shadow:inset 0 1px 0 #fff,0 2px 0 #ad9356;cursor:pointer}button:hover{filter:brightness(1.04)}input{width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fffdf6}.game{width:min(1220px,calc(100% - 24px));margin:18px auto 34px;border:1px solid #cdbb8e;border-radius:18px;overflow:hidden;background:rgba(255,252,241,.76);box-shadow:0 18px 46px rgba(48,55,35,.18)}.top{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(420px,1.3fr);gap:16px;align-items:center;padding:16px 20px;background:linear-gradient(90deg,rgba(255,255,255,.86),rgba(255,255,255,.35)),linear-gradient(135deg,#89b654,#f0d982)}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:54px;height:54px;border:4px solid #fff7d8;border-radius:50%;color:white;background:radial-gradient(circle at 35% 28%,#e8ff9d 0 14px,transparent 15px),linear-gradient(135deg,#78a941,#2e6537);font-weight:800}h1,h2,h3,p{margin-top:0}h1{margin-bottom:2px;font-size:1.55rem}.brand p,.hint,.eyebrow,#status{color:var(--muted)}.resbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.res{display:grid;grid-template-columns:38px 1fr;gap:2px 9px;align-items:center;min-height:56px;border:1px solid rgba(92,76,43,.2);border-radius:12px;padding:9px;background:rgba(255,255,255,.78)}.res:before{grid-row:1/3;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;color:white;font-weight:800}.wood:before{content:'木';background:var(--wood)}.clay:before{content:'土';background:var(--clay)}.iron:before{content:'鐵';background:var(--iron)}.crop:before{content:'穀';background:var(--crop)}.res span,.res small{display:block;color:var(--muted);font-size:.78rem}.res strong{font-size:1.1rem}.layout{display:grid;grid-template-columns:168px 1fr}.side{display:grid;align-content:start;gap:9px;min-height:690px;padding:18px 14px;border-right:1px solid rgba(138,116,70,.22);background:rgba(255,250,232,.78)}.nav{text-align:left;background:rgba(255,255,255,.72)}.nav.on,.primary{color:white;border-color:var(--dark);background:linear-gradient(#6fa34a,#32683c)}.note{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.7);color:var(--muted);font-size:.9rem}.main{padding:20px}.view{display:none}.view.on{display:block}.hero{display:grid;grid-template-columns:minmax(270px,.78fr) minmax(360px,1.22fr);gap:22px;align-items:center;min-height:318px;border:1px solid rgba(120,104,68,.22);border-radius:18px;padding:clamp(18px,3vw,30px);background:linear-gradient(90deg,rgba(255,252,241,.96),rgba(255,252,241,.42)),linear-gradient(135deg,#dcefc5,#f7e8a8)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0 0}.stats div,.panel,.target,.pill,.reports li{border:1px solid var(--line);border-radius:14px;background:rgba(255,253,246,.92)}.stats div{padding:10px}dt{color:var(--muted);font-size:.78rem}dd{margin:4px 0 0;font-weight:800}.art{position:relative;min-height:270px;border-radius:26px;overflow:hidden;background:radial-gradient(ellipse at 50% 58%,rgba(255,246,188,.92) 0 33%,transparent 34%),radial-gradient(ellipse at 50% 58%,#76aa58 0 43%,transparent 44%),linear-gradient(#cdeafa 0 40%,#dcefc3 41% 100%);box-shadow:inset 0 0 0 1px rgba(64,84,41,.18)}.sun{position:absolute;right:9%;top:10%;width:52px;height:52px;border-radius:50%;background:#ffe58a;box-shadow:0 0 40px #ffe9a8}.river{position:absolute;left:-4%;right:-3%;bottom:18%;height:42px;border-radius:50%;background:rgba(86,169,205,.66);transform:rotate(-5deg)}.wall{position:absolute;inset:22% 18%;border:15px solid #d8c27b;border-radius:50%;box-shadow:inset 0 0 0 4px #9a8550}.keep,.house,.trees,.patch{position:absolute}.keep,.house{border:2px solid #734c28;background:#f1d58c;box-shadow:0 5px 0 rgba(55,41,20,.1)}.keep:before,.house:before{content:'';position:absolute;left:-5px;right:-5px;top:-21px;height:23px;background:#d08f2b;clip-path:polygon(50% 0,100% 100%,0 100%)}.keep{left:45%;top:41%;width:66px;height:52px}.house{width:48px;height:34px}.h1{left:31%;top:38%}.h2{left:58%;top:32%}.h3{left:60%;top:57%}.trees{width:92px;height:64px;border-radius:50%;background:radial-gradient(circle at 18% 58%,#3f7a31 0 18px,transparent 19px),radial-gradient(circle at 48% 34%,#5c9c3e 0 22px,transparent 23px),radial-gradient(circle at 75% 62%,#2f6829 0 18px,transparent 19px)}.t1{left:15%;top:26%}.t2{right:14%;top:48%}.patch{width:96px;height:54px;border-radius:50%;background:repeating-linear-gradient(90deg,#d7bd39 0 8px,#9eb54a 8px 16px);transform:rotate(-12deg)}.p1{left:23%;bottom:18%}.p2{right:21%;top:21%}.head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 0 12px}.eyebrow{margin-bottom:4px;font-size:.78rem;font-weight:800;letter-spacing:.08em}.fields{display:grid;grid-template-columns:repeat(6,minmax(92px,1fr));gap:10px}.field{min-height:108px;border:1px solid rgba(103,82,43,.26);border-radius:18px;padding:12px;color:white;box-shadow:inset 0 -18px 28px rgba(0,0,0,.12)}.field strong,.field span{display:block}.ico{display:grid;place-items:center;width:42px;height:42px;margin-bottom:12px;border-radius:13px;background:rgba(255,255,255,.22);font-weight:800}.fwood{background:linear-gradient(135deg,#4a8439,#235e31)}.fclay{background:linear-gradient(135deg,#c0703c,#94452b)}.firon{background:linear-gradient(135deg,#a4adae,#677276)}.fcrop{background:linear-gradient(135deg,#d8ba33,#9b8f2e)}.actions{display:grid;grid-template-columns:repeat(3,minmax(140px,1fr));gap:10px;margin-top:16px}.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:18px}.panel{padding:16px}.row{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.danger{color:white;border-color:#8d271f;background:linear-gradient(#d85f52,var(--danger))}.map{display:grid;grid-template-columns:repeat(7,minmax(76px,1fr));gap:9px;border:1px solid var(--line);border-radius:18px;padding:16px;background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.7),transparent 24%),linear-gradient(135deg,#cfe8b9,#f4dd8b 55%,#bfe0b3)}.tile{min-height:82px;border:1px solid rgba(91,74,39,.24);border-radius:14px;padding:9px;text-align:left;background:#e8c95a;box-shadow:0 3px 0 rgba(76,66,37,.14)}.tile.sel{outline:3px solid #3977d3}.village{background:radial-gradient(circle,#f2df82,#79ad55)}.oasis{background:radial-gradient(circle at 35% 34%,#31722d 0 16px,transparent 17px),radial-gradient(circle at 68% 52%,#5b9a3e 0 20px,transparent 21px),linear-gradient(135deg,#9bd16c,#ddc85f)}.badge{display:grid;place-items:center;width:32px;height:32px;margin-bottom:6px;border-radius:50%;color:white;background:rgba(39,48,31,.35);font-weight:800}.target{padding:12px;margin-bottom:12px}.troops{display:grid;gap:10px}.pill{padding:12px}.reports{display:grid;gap:10px;margin:0;padding-left:22px}.reports li{padding:12px}@media(max-width:980px){.top,.layout,.hero,.split{grid-template-columns:1fr}.side{min-height:auto;grid-template-columns:repeat(4,1fr)}.note{grid-column:1/-1}.resbar,.fields,.actions,.map{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.game{width:100%;margin:0;border-radius:0}.main{padding:14px}.resbar,.fields,.actions,.map,.stats,.side{grid-template-columns:1fr}}
-</style>
-</head><body><div class='game'><header class='top'><div class='brand'><div class='mark'>FV</div><div><h1>邊境村莊</h1><p>單人網頁策略小遊戲</p></div></div><section class='resbar'><article class='res wood'><span>木材</span><strong id='wood'>0</strong><small id='woodRate'>+0/h</small></article><article class='res clay'><span>泥土</span><strong id='clay'>0</strong><small id='clayRate'>+0/h</small></article><article class='res iron'><span>鐵礦</span><strong id='iron'>0</strong><small id='ironRate'>+0/h</small></article><article class='res crop'><span>穀物</span><strong id='crop'>0</strong><small id='cropRate'>+0/h</small></article></section></header><div class='layout'><aside class='side'><button class='nav on' data-view='village'>村莊</button><button class='nav' data-view='map'>地圖</button><button class='nav' data-view='reports'>戰報</button><button class='nav' data-view='save'>存檔</button><div class='note'><strong>目前目標</strong><br>升級資源田、訓練士兵、清除綠洲。</div></aside><main class='main'><section id='village' class='view on'><div class='hero'><div><p class='eyebrow'>你的據點</p><h2>黎明河谷</h2><p>這裡是你的第一座村莊。資源會隨時間成長，出兵前先把經濟和兵力穩住。</p><dl class='stats'><div><dt>人口</dt><dd id='pop'>0</dd></div><div><dt>回合</dt><dd id='turn'>1</dd></div><div><dt>勝率</dt><dd id='win'>0%</dd></div></dl></div><div class='art'><div class='sun'></div><div class='river'></div><div class='wall'></div><div class='keep'></div><div class='house h1'></div><div class='house h2'></div><div class='house h3'></div><div class='trees t1'></div><div class='trees t2'></div><div class='patch p1'></div><div class='patch p2'></div></div></div><div class='head'><div><p class='eyebrow'>生產區</p><h3>資源田</h3></div><button id='quickSave'>快速存檔</button></div><div id='fields' class='fields'></div><div class='actions'><button id='upWood'>升級伐木場</button><button id='upClay'>升級泥坑</button><button id='upIron'>升級鐵礦</button><button id='upCrop'>升級農田</button><button id='trainClub'>訓練棍棒兵 x3</button><button id='trainSpear'>訓練矛兵 x2</button></div></section><section id='map' class='view'><div class='split'><div><div class='head'><div><p class='eyebrow'>周邊區域</p><h2>世界地圖</h2></div></div><div id='mapGrid' class='map'></div></div><aside class='panel'><h3>出兵攻擊</h3><div id='target' class='target'>請先選擇一個綠洲。</div><label>棍棒兵<input id='sendClub' type='number' min='0' value='4'></label><label>矛兵<input id='sendSpear' type='number' min='0' value='1'></label><button id='attack' class='primary'>攻擊目標</button><p class='hint'>綠洲有野獸防守。攻擊力不足會失敗，並損失士兵。</p></aside></div></section><section id='reports' class='view'><div class='head'><div><p class='eyebrow'>軍事紀錄</p><h2>戰報與兵力</h2></div></div><div class='split'><article class='panel'><h3>目前兵力</h3><div id='troops' class='troops'></div></article><article class='panel'><h3>最近戰報</h3><ol id='reportList' class='reports'></ol></article></div></section><section id='save' class='view'><div class='head'><div><p class='eyebrow'>雲端備份</p><h2>存檔設定</h2></div></div><div class='split'><article class='panel'><h3>Google Sheets 同步</h3><label>Apps Script endpoint<input id='endpoint' type='url' placeholder='https://script.google.com/macros/s/.../exec'></label><label>Sync token<input id='token' type='password' placeholder='如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組'></label><div class='row'><button id='saveEndpoint'>儲存設定</button><button id='sync' class='primary'>同步 Sheets</button></div><p id='status'>尚未同步。</p></article><article class='panel'><h3>本機備份</h3><p>線上玩時會先存在瀏覽器。Google Sheets endpoint 設定完成後，才會同步到試算表。</p><div class='row'><button id='saveLocal'>本機存檔</button><button id='export'>匯出 JSON</button><button id='reset' class='danger'>重置遊戲</button></div><p class='hint'>最近存檔：<span id='last'>尚無</span></p></article></div></section></main></div></div><script>
-const sheet='https://docs.google.com/spreadsheets/d/1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2ZXc/edit?usp=drivesdk',store='frontier-village-save-v3',epKey='frontier-village-endpoint',tokenKey='frontier-village-token';
-const unit={club:{label:'棍棒兵',atk:40,cost:{wood:95,clay:75,iron:40,crop:40}},spear:{label:'矛兵',atk:10,cost:{wood:80,clay:100,iron:80,crop:40}},scout:{label:'斥候',atk:0,cost:{wood:60,clay:40,iron:90,crop:50}}};
-const defs=[['wood','伐木場'],['wood','伐木場'],['wood','伐木場'],['wood','伐木場'],['clay','泥坑'],['clay','泥坑'],['clay','泥坑'],['clay','泥坑'],['iron','鐵礦'],['iron','鐵礦'],['iron','鐵礦'],['iron','鐵礦'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田']];let selected=null,state=load();
-function fresh(){return{turn:1,lastTick:Date.now(),lastSaved:null,res:{wood:750,clay:750,iron:750,crop:750},fields:defs.map((d,i)=>({id:d[0]+i,type:d[0],name:d[1],level:1})),troops:{club:12,spear:4,scout:2},map:makeMap(),reports:[]}}
-function makeMap(){let a=[];for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++)a.push({id:x+'_'+y,x,y,type:x==0&&y==0?'village':'empty',name:x==0&&y==0?'你的村莊':'荒地'});[{id:'-1_1',name:'森林綠洲',bonus:'木材 +25%',animals:18,res:{wood:120,clay:45,iron:35,crop:55}},{id:'2_-1',name:'泥土綠洲',bonus:'泥土 +25%',animals:10,res:{wood:50,clay:135,iron:40,crop:60}},{id:'1_2',name:'穀物綠洲',bonus:'穀物 +25%',animals:26,res:{wood:40,clay:60,iron:45,crop:160}},{id:'-2_-2',name:'鐵礦綠洲',bonus:'鐵礦 +25%',animals:14,res:{wood:70,clay:45,iron:140,crop:40}}].forEach(o=>Object.assign(a.find(t=>t.id==o.id),o,{type:'oasis',cleared:false}));return a}
-function load(){try{return JSON.parse(localStorage.getItem(store))||fresh()}catch{return fresh()}}function rates(){let r={wood:0,clay:0,iron:0,crop:0};state.fields.forEach(f=>r[f.type]+=16+f.level*12);r.crop=Math.max(0,r.crop-state.troops.club-state.troops.spear-state.troops.scout);return r}function tick(){let now=Date.now(),h=Math.max(0,(now-state.lastTick)/3600000);if(h<.001)return;let r=rates();Object.keys(r).forEach(k=>state.res[k]=Math.min(8000,state.res[k]+r[k]*h));state.lastTick=now}function canPay(c){return Object.entries(c).every(([k,v])=>state.res[k]>=v)}function pay(c){if(!canPay(c)){status('資源不足，先等待生產或升級其他項目。');return false}Object.entries(c).forEach(([k,v])=>state.res[k]-=v);return true}function save(m='已存到瀏覽器。'){state.lastSaved=new Date().toISOString();localStorage.setItem(store,JSON.stringify(state));status(m);render()}
-function upgrade(type){let f=state.fields.filter(x=>x.type==type).sort((a,b)=>a.level-b.level)[0],c={wood:80+f.level*40,clay:70+f.level*35,iron:55+f.level*30,crop:35+f.level*22};if(!pay(c))return;f.level++;state.turn++;save(f.name+' 升到等級 '+f.level+'。')}function train(u,n){let c={};Object.entries(unit[u].cost).forEach(([k,v])=>c[k]=v*n);if(!pay(c))return;state.troops[u]+=n;state.turn++;save('已訓練 '+unit[u].label+' x'+n+'。')}
-function attack(){let t=state.map.find(x=>x.id==selected);if(!t||t.type!='oasis'||t.cleared){status('請先選擇尚未清除的綠洲。');return}let sent={club:num('sendClub'),spear:num('sendSpear')};if(sent.club+sent.spear<=0){status('至少要派出一名士兵。');return}if(sent.club>state.troops.club||sent.spear>state.troops.spear){status('派出的士兵超過目前兵力。');return}let ap=sent.club*unit.club.atk+sent.spear*unit.spear.atk,dp=t.animals*22+Math.round(Math.random()*70),win=ap>=dp,ratio=win?Math.min(.45,dp/Math.max(1,ap)*.38):Math.min(.85,dp/Math.max(1,ap)*.52),loss={club:Math.min(sent.club,Math.ceil(sent.club*ratio)),spear:Math.min(sent.spear,Math.ceil(sent.spear*ratio))};state.troops.club-=loss.club;state.troops.spear-=loss.spear;let loot=win?t.res:{wood:0,clay:0,iron:0,crop:0};if(win){Object.keys(loot).forEach(k=>state.res[k]+=loot[k]);t.cleared=true;t.animals=0}else t.animals=Math.max(1,t.animals-Math.ceil((sent.club+sent.spear)/4));state.reports.unshift({time:new Date().toLocaleString('zh-TW'),target:t.name,result:win?'勝利':'失敗',loss,loot});state.reports=state.reports.slice(0,25);state.turn++;save(win?'攻擊成功：'+t.name:'攻擊失敗：'+t.name)}function num(id){return Math.max(0,Math.floor(Number(document.getElementById(id).value)||0))}
-function render(){tick();let r=rates();['wood','clay','iron','crop'].forEach(k=>{document.getElementById(k).textContent=Math.floor(state.res[k]).toLocaleString('zh-TW');document.getElementById(k+'Rate').textContent='+'+r[k]+'/h'});document.getElementById('pop').textContent=28+state.fields.reduce((s,f)=>s+f.level,0);document.getElementById('turn').textContent=state.turn;document.getElementById('last').textContent=state.lastSaved?new Date(state.lastSaved).toLocaleString('zh-TW'):'尚無';let wins=state.reports.filter(x=>x.result=='勝利').length;document.getElementById('win').textContent=state.reports.length?Math.round(wins/state.reports.length*100)+'%':'0%';renderFields();renderTroops();renderMap();renderReports()}
-function renderFields(){document.getElementById('fields').innerHTML=state.fields.map(f=>'<article class="field f'+f.type+'"><span class="ico">'+({wood:'木',clay:'土',iron:'鐵',crop:'穀'}[f.type])+'</span><strong>'+f.name+'</strong><span>等級 '+f.level+'</span></article>').join('')}function renderTroops(){document.getElementById('troops').innerHTML=Object.entries(state.troops).map(([u,c])=>'<div class="pill"><strong>'+unit[u].label+'</strong> x'+c+'</div>').join('')}function renderMap(){document.getElementById('mapGrid').innerHTML=state.map.map(t=>{let d=t.type=='oasis'?t.bonus+' / 野獸 '+t.animals+(t.cleared?' / 已清除':''):'('+t.x+', '+t.y+')';let b=t.type=='village'?'村':t.type=='oasis'?(t.cleared?'清':'洲'):'地';return '<button class="tile '+t.type+(t.id==selected?' sel':'')+'" data-id="'+t.id+'"><span class="badge">'+b+'</span><strong>'+t.name+'</strong><span>'+d+'</span></button>'}).join('');document.querySelectorAll('.tile').forEach(btn=>btn.onclick=()=>{selected=btn.dataset.id;target();renderMap()});target()}function target(){let c=document.getElementById('target'),t=state.map.find(x=>x.id==selected);c.innerHTML=!t||t.type!='oasis'?'請先選擇一個綠洲。':'<strong>'+t.name+'</strong><br>'+t.bonus+'<br>野獸 '+t.animals+'<br>'+(t.cleared?'已清除':'可攻擊')}function renderReports(){let l=document.getElementById('reportList');l.innerHTML=state.reports.length?state.reports.map(r=>'<li><strong>'+r.result+'</strong> '+r.target+' <span>'+r.time+'</span><br>損失：棍棒兵 '+r.loss.club+'、矛兵 '+r.loss.spear+'；戰利品：木 '+r.loot.wood+' / 土 '+r.loot.clay+' / 鐵 '+r.loot.iron+' / 穀 '+r.loot.crop+'</li>').join(''):'<li>尚無戰報。</li>'}function status(m){document.getElementById('status').textContent=m+' Google Sheet: '+sheet}
-async function sync(){let e=localStorage.getItem(epKey);if(!e){status('尚未設定 Apps Script endpoint；目前只會本機存檔。');return}try{let res=await fetch(e,{method:'POST',mode:'cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',token:localStorage.getItem(tokenKey)||'',state,savedAt:new Date().toISOString()})}),j=await res.json();status(j.ok?'已同步到 Google Sheets。':'同步端點回傳錯誤。')}catch(err){status('同步失敗：'+err.message)}}function exportJson(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='frontier-village-save.json';a.click()}
-document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.view==n.dataset.view));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==n.dataset.view))});document.getElementById('upWood').onclick=()=>upgrade('wood');document.getElementById('upClay').onclick=()=>upgrade('clay');document.getElementById('upIron').onclick=()=>upgrade('iron');document.getElementById('upCrop').onclick=()=>upgrade('crop');document.getElementById('trainClub').onclick=()=>train('club',3);document.getElementById('trainSpear').onclick=()=>train('spear',2);document.getElementById('attack').onclick=attack;document.getElementById('quickSave').onclick=()=>save('快速存檔完成。');document.getElementById('saveLocal').onclick=()=>save();document.getElementById('sync').onclick=sync;document.getElementById('export').onclick=exportJson;document.getElementById('reset').onclick=()=>{if(confirm('確定要重置遊戲？')){state=fresh();selected=null;save('已重置新遊戲。')}};document.getElementById('saveEndpoint').onclick=()=>{localStorage.setItem(epKey,document.getElementById('endpoint').value.trim());localStorage.setItem(tokenKey,document.getElementById('token').value.trim());status('同步設定已儲存。')};document.getElementById('endpoint').value=localStorage.getItem(epKey)||'';document.getElementById('token').value=localStorage.getItem(tokenKey)||'';render();setInterval(()=>{tick();render()},5000);
-</script></body></html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>邊境村莊 Frontier Village</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%233d6f35'/%3E%3Cpath d='M8 42h48v12H8z' fill='%23d8b24a'/%3E%3Cpath d='M14 38 32 18l18 20z' fill='%23f3dd76'/%3E%3Cpath d='M23 38h18v16H23z' fill='%23885828'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="game-shell">
+      <header class="topbar" aria-label="遊戲資源列">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">村</div>
+          <div>
+            <h1>邊境村莊</h1>
+            <p>單人網頁策略小遊戲</p>
+          </div>
+        </div>
+
+        <section class="hud-grid" aria-label="目前資源與狀態">
+          <article class="hud-item wood" data-hud="wood">
+            <span class="hud-icon">🪵</span>
+            <span class="hud-label">木材</span>
+            <strong id="wood">0</strong>
+            <small id="woodRate">+0/h</small>
+          </article>
+          <article class="hud-item clay" data-hud="clay">
+            <span class="hud-icon">🧱</span>
+            <span class="hud-label">泥土</span>
+            <strong id="clay">0</strong>
+            <small id="clayRate">+0/h</small>
+          </article>
+          <article class="hud-item iron" data-hud="iron">
+            <span class="hud-icon">⛓️</span>
+            <span class="hud-label">鐵礦</span>
+            <strong id="iron">0</strong>
+            <small id="ironRate">+0/h</small>
+          </article>
+          <article class="hud-item crop" data-hud="crop">
+            <span class="hud-icon">🌾</span>
+            <span class="hud-label">穀物</span>
+            <strong id="crop">0</strong>
+            <small id="cropRate">+0/h</small>
+          </article>
+          <article class="hud-item status" data-hud="population">
+            <span class="hud-icon">👥</span>
+            <span class="hud-label">人口</span>
+            <strong id="population">0</strong>
+            <small>村莊規模</small>
+          </article>
+          <article class="hud-item status" data-hud="soldiers">
+            <span class="hud-icon">⚔️</span>
+            <span class="hud-label">士兵</span>
+            <strong id="soldiers">0</strong>
+            <small id="cropUse">耗糧 0/h</small>
+          </article>
+          <article class="hud-item status" data-hud="turn">
+            <span class="hud-icon">🔁</span>
+            <span class="hud-label">回合</span>
+            <strong id="turn">1</strong>
+            <small>行動紀錄</small>
+          </article>
+        </section>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar" aria-label="主選單">
+          <nav class="main-nav">
+            <button class="nav active" data-view="village"><span>🏠</span>村莊</button>
+            <button class="nav" data-view="map"><span>🗺️</span>地圖</button>
+            <button class="nav" data-view="military"><span>⚔️</span>出兵 / 軍事</button>
+            <button class="nav" data-view="reports"><span>📜</span>戰報</button>
+            <button class="nav" data-view="save"><span>💾</span>存檔</button>
+          </nav>
+
+          <section class="task-box" aria-label="目前任務">
+            <h2>目前任務</h2>
+            <ol id="questList"></ol>
+          </section>
+        </aside>
+
+        <main class="content">
+          <div id="notice" class="notice" role="status">歡迎回到邊境村莊。先升級一塊資源田，再去地圖偵察綠洲。</div>
+
+          <section id="village" class="view active-view">
+            <div class="hero-panel">
+              <div class="hero-copy">
+                <p class="eyebrow">你的據點</p>
+                <h2>黎明河谷</h2>
+                <p>資源田會持續產出，兵營能訓練基礎部隊。把經濟與兵力拉起來，就能清除周邊綠洲。</p>
+                <dl class="quick-stats">
+                  <div><dt>村莊</dt><dd>你的村莊</dd></div>
+                  <div><dt>勝率</dt><dd id="winRate">0%</dd></div>
+                  <div><dt>最近存檔</dt><dd id="lastSavedMini">尚無</dd></div>
+                </dl>
+              </div>
+              <div class="village-art" aria-label="村莊示意圖">
+                <span class="sun"></span>
+                <span class="river"></span>
+                <span class="wall"></span>
+                <span class="keep"></span>
+                <span class="house h1"></span>
+                <span class="house h2"></span>
+                <span class="house h3"></span>
+                <span class="trees t1"></span>
+                <span class="trees t2"></span>
+                <span class="field-patch p1"></span>
+                <span class="field-patch p2"></span>
+              </div>
+            </div>
+
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">可點擊升級</p>
+                <h2>資源田</h2>
+              </div>
+              <button id="quickSaveBtn" class="icon-btn">💾 快速存檔</button>
+            </div>
+            <div id="fieldGrid" class="field-grid" aria-label="資源田"></div>
+
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">村莊建築</p>
+                <h2>兵營</h2>
+              </div>
+            </div>
+            <div class="building-grid">
+              <article class="building-card">
+                <span class="building-icon">⚔️</span>
+                <div>
+                  <h3>兵營</h3>
+                  <p>訓練基礎步兵，適合清除低等綠洲。</p>
+                </div>
+                <button id="trainClubBtn">⚔️ 訓練棍棒兵 x3</button>
+                <button id="trainSpearBtn">🛡️ 訓練矛兵 x2</button>
+              </article>
+            </div>
+          </section>
+
+          <section id="map" class="view">
+            <div class="split">
+              <div>
+                <div class="section-head">
+                  <div>
+                    <p class="eyebrow">7 x 7 周邊區域</p>
+                    <h2>世界地圖</h2>
+                  </div>
+                </div>
+                <div id="mapGrid" class="map-grid" aria-label="地圖方格"></div>
+              </div>
+              <aside class="panel target-panel">
+                <h2>出兵攻擊</h2>
+                <div id="targetCard" class="target-card">請先點擊地圖上的綠洲或野獸營地。</div>
+                <div class="send-grid">
+                  <label>棍棒兵<input id="sendClub" type="number" min="0" value="4" /></label>
+                  <label>矛兵<input id="sendSpear" type="number" min="0" value="1" /></label>
+                </div>
+                <button id="attackBtn" class="primary full">⚔️ 攻擊目標</button>
+                <div id="battleResult" class="battle-result muted-result">尚未交戰。</div>
+              </aside>
+            </div>
+          </section>
+
+          <section id="military" class="view">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">部隊管理</p>
+                <h2>軍事</h2>
+              </div>
+            </div>
+            <div class="split">
+              <article class="panel">
+                <h2>目前兵力</h2>
+                <div id="troopSummary" class="troop-summary"></div>
+              </article>
+              <article class="panel">
+                <h2>訓練</h2>
+                <div class="train-actions">
+                  <button id="trainClubBtnMilitary">⚔️ 訓練棍棒兵 x3</button>
+                  <button id="trainSpearBtnMilitary">🛡️ 訓練矛兵 x2</button>
+                </div>
+                <p class="hint">出兵請到「地圖」選擇目標；這裡負責補兵。</p>
+              </article>
+            </div>
+          </section>
+
+          <section id="reports" class="view">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">軍事紀錄</p>
+                <h2>戰報</h2>
+              </div>
+            </div>
+            <ol id="reportList" class="report-list"></ol>
+          </section>
+
+          <section id="save" class="view">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">備份</p>
+                <h2>存檔設定</h2>
+              </div>
+            </div>
+            <div class="split">
+              <article class="panel">
+                <h2>Google Sheets 同步</h2>
+                <label>Apps Script endpoint<input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" /></label>
+                <label>Sync token<input id="tokenInput" type="password" placeholder="如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組" /></label>
+                <div class="button-row">
+                  <button id="saveEndpointBtn">💾 儲存設定</button>
+                  <button id="syncSheetBtn" class="primary">☁️ 同步 Sheets</button>
+                </div>
+                <p id="saveStatus" class="status-line">尚未同步。</p>
+              </article>
+              <article class="panel">
+                <h2>本機備份</h2>
+                <p>線上遊玩會先寫入瀏覽器 localStorage。設定 Apps Script endpoint 後，可再同步到 Google Sheets。</p>
+                <div class="button-row">
+                  <button id="saveLocalBtn">💾 本機存檔</button>
+                  <button id="exportBtn">📦 匯出 JSON</button>
+                  <button id="resetBtn" class="danger">🧹 重置遊戲</button>
+                </div>
+                <p class="hint">最近存檔：<span id="lastSaved">尚無</span></p>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
