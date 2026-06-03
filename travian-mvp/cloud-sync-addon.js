@@ -7,6 +7,7 @@
   const SYNCED_ACTIONS_KEY = "frontier-village-synced-action-ids";
   const SYNCED_BATTLES_KEY = "frontier-village-synced-battle-ids";
   const DEBOUNCE_MS = 1600;
+  const VERIFY_DELAY_MS = 1800;
   let timer = null;
   let busy = false;
   let lastRaw = "";
@@ -27,6 +28,7 @@
   function isSheetUrl(url) { return /docs\.google\.com\/spreadsheets\//.test(url || ""); }
   function readState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } }
   function writeState(state) { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
   function bindControls() {
     document.addEventListener("click", (event) => {
@@ -91,26 +93,29 @@
     if (!changed && !actionLogs.length && !battleLogs.length) return refreshStatus();
 
     busy = true;
-    setCloudStatus("busy", "雲端同步：同步中...");
+    setCloudStatus("busy", "雲端同步：送出中，正在等待 Google Sheets 寫入...");
     try {
-      const response = await fetch(url, {
+      const sentAt = new Date().toISOString();
+      await fetch(url, {
         method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        mode: "no-cors",
         body: JSON.stringify({
           action: "saveState",
           token: token(),
           state,
           reason,
-          savedAt: new Date().toISOString(),
+          savedAt: sentAt,
           actionLogs,
           battleLogs,
         }),
       });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const result = await response.json();
-      if (!result.ok) throw new Error(result.error || "Apps Script 回傳失敗");
-      const savedAt = result.savedAt || new Date().toISOString();
+
+      setCloudStatus("busy", "雲端同步：已送出，正在讀回 Google Sheets 驗證...");
+      await delay(VERIFY_DELAY_MS);
+      const verified = await loadStateViaJsonp(url);
+      if (!verified.ok || !verified.state) throw new Error(verified.error || "讀回驗證失敗，請確認 Apps Script 已重新部署最新版本。");
+
+      const savedAt = verified.savedAt || sentAt;
       state.lastCloudSaved = savedAt;
       state.lastSaved = state.lastSaved || savedAt;
       writeState(state);
@@ -120,7 +125,7 @@
       markSynced(battleLogs, SYNCED_BATTLES_KEY);
       setCloudStatus("ok", "已同步到 Google Sheets。最近一次雲端同步時間：" + new Date(savedAt).toLocaleString("zh-TW"));
     } catch (error) {
-      setCloudStatus("fail", "雲端同步：失敗 - " + error.message);
+      setCloudStatus("fail", "雲端同步：失敗 - " + explainError(error));
     } finally {
       busy = false;
     }
@@ -132,14 +137,7 @@
     if (isSheetUrl(url) || !validEndpoint(url)) return setCloudStatus("fail", "endpoint 欄位錯誤：請填 Apps Script Web App URL，不是 Google Sheet 網址。");
     setCloudStatus("busy", "正在從 Google Sheets 載入雲端存檔...");
     try {
-      const response = await fetch(url, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "loadState", token: token() }),
-      });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const result = await response.json();
+      const result = await loadStateViaJsonp(url);
       if (!result.ok || !result.state) throw new Error(result.error || "Google Sheets 沒有可載入的 state_json");
       writeState(result.state);
       localStorage.setItem(CLOUD_HASH_KEY, hashText(JSON.stringify(result.state)));
@@ -147,8 +145,53 @@
       setCloudStatus("ok", "已從 Google Sheets 載入雲端存檔，頁面將重新整理。");
       setTimeout(() => location.reload(), 800);
     } catch (error) {
-      setCloudStatus("fail", "雲端讀取失敗，保留本機備用存檔。" + error.message);
+      setCloudStatus("fail", "雲端讀取失敗，保留本機備用存檔。" + explainError(error));
     }
+  }
+
+  function loadStateViaJsonp(url) {
+    return jsonp(url, { action: "loadState", token: token() });
+  }
+
+  function jsonp(baseUrl, params = {}) {
+    return new Promise((resolve, reject) => {
+      const callbackName = "__frontierCloud" + Date.now() + Math.random().toString(16).slice(2);
+      const script = document.createElement("script");
+      const target = new URL(baseUrl);
+      Object.entries({ ...params, callback: callbackName, _: Date.now() }).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") target.searchParams.set(key, value);
+      });
+
+      let done = false;
+      const cleanup = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        delete window[callbackName];
+        script.remove();
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("讀回逾時，請確認 Apps Script 已部署成 Web App，且存取權限為所有人。"));
+      }, 12000);
+
+      window[callbackName] = (data) => {
+        cleanup();
+        resolve(data || {});
+      };
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("JSONP 讀取失敗，請重新部署 Apps Script 最新版本。"));
+      };
+      script.src = target.toString();
+      document.head.appendChild(script);
+    });
+  }
+
+  function explainError(error) {
+    const message = String(error?.message || error || "未知錯誤");
+    if (/Failed to fetch|NetworkError/i.test(message)) return "瀏覽器阻擋 Apps Script 回應。已改用 no-cors 寫入，請把 Code.gs 重新部署成最新 Web App 後再試一次。";
+    return message;
   }
 
   function unsyncedLogs(logs, key) {
