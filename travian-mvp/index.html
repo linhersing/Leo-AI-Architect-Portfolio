@@ -6,6 +6,11 @@
   <title>邊境村莊 Frontier Village</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%233d6f35'/%3E%3Cpath d='M8 42h48v12H8z' fill='%23d8b24a'/%3E%3Cpath d='M14 38 32 18l18 20z' fill='%23f3dd76'/%3E%3Cpath d='M23 38h18v16H23z' fill='%23885828'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .village-text-map{margin-top:14px;padding:14px;border:1px solid rgba(100,70,34,.22);border-radius:14px;background:rgba(255,248,220,.92);box-shadow:0 10px 24px rgba(83,55,25,.12)}
+    .village-text-map h3{margin:0 0 10px;font-size:1rem;color:#5b3b18}.text-node-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.text-node{display:grid;gap:4px;padding:10px;border:1px solid rgba(93,66,32,.18);border-radius:12px;background:#fffaf0;color:#3d2a12;text-align:left}.text-node strong{font-size:.95rem}.text-node span{font-size:.82rem;line-height:1.35;color:#6a4c24}.text-node[data-jump],.text-node[data-building]{cursor:pointer}.text-node[data-jump]:hover,.text-node[data-building]:hover{border-color:#b9822e;transform:translateY(-1px)}
+    @media (max-width:768px){.text-node-grid{grid-template-columns:1fr}.village-text-map{margin:10px 0 0;padding:12px}.village-text-map h3{font-size:.95rem}.text-node{min-height:48px}}
+  </style>
 </head>
 <body>
   <div class="game-shell">
@@ -41,10 +46,10 @@
           <div class="hero-panel">
             <div class="hero-copy">
               <p class="eyebrow">你的據點</p><h2>黎明河谷</h2>
-              <p>資源會按時間成長。先升級資源田、訓練棍棒兵，再前往地圖清除綠洲。</p>
+              <p>圖片只是村莊概念圖；真正可操作的位置在下方文字清單。先進入資源田升級，再到兵營訓練士兵。</p>
               <dl class="quick-stats"><div><dt>村莊</dt><dd>你的村莊</dd></div><div><dt>勝率</dt><dd id="winRate">0%</dd></div><div><dt>本機自動存檔</dt><dd id="lastSavedMini">尚無</dd></div></dl>
             </div>
-            <div id="villageArt" class="village-art" aria-label="可點擊的村莊建築示意圖">
+            <div id="villageArt" class="village-art" aria-label="村莊示意圖">
               <span class="sun"></span><span class="river"></span><span class="wall"></span>
               <button type="button" class="building-hotspot keep" data-building="main" aria-label="進入主樓"><span>🏛️</span><b>主樓</b></button>
               <button type="button" class="building-hotspot house h1" data-building="warehouse" aria-label="進入倉庫"><span>📦</span><b>倉庫</b></button>
@@ -56,10 +61,24 @@
             </div>
           </div>
 
-          <div class="village-mode-bar" aria-label="村莊快速切換"><button class="village-mode active" data-village-panel="buildings">🏘️ 建築</button><button class="village-mode" data-village-panel="resources">🪵 資源</button><button class="village-mode" data-village-panel="training">⚔️ 訓練</button><span class="village-coach">點村莊建築、升級資源、訓練士兵。</span></div>
+          <section class="village-text-map" aria-label="文字版村莊操作區">
+            <h3>文字版可操作區</h3>
+            <div class="text-node-grid">
+              <button type="button" class="text-node" data-building="main"><strong>🏛️ 主樓</strong><span>查看村莊核心建築，之後可作為建設管理中心。</span></button>
+              <button type="button" class="text-node" data-building="warehouse"><strong>📦 倉庫</strong><span>提高資源上限，避免木材、泥土、鐵礦、穀物滿倉浪費。</span></button>
+              <button type="button" class="text-node" data-building="barracks"><strong>⚔️ 兵營</strong><span>訓練棍棒兵與矛兵，準備攻擊綠洲或防守敵襲。</span></button>
+              <button type="button" class="text-node" data-building="rally"><strong>🚩 集結點</strong><span>出兵前的集合位置。要攻擊敵人時，先去地圖選目標。</span></button>
+              <button type="button" class="text-node" data-building="wall"><strong>🧱 城門與城牆</strong><span>提高防守；敵人的衝撞車會優先破壞這裡。</span></button>
+              <button type="button" class="text-node" data-jump="resources"><strong>🪵 資源田</strong><span>點這裡看全部資源田，選一塊升級取得更高產量。</span></button>
+              <button type="button" class="text-node" data-jump="training"><strong>🛡️ 訓練士兵</strong><span>資源足夠後訓練士兵，防守敵襲或外出攻擊。</span></button>
+              <button type="button" class="text-node" data-view="map"><strong>🗺️ 前往地圖</strong><span>選擇綠洲、野獸營地或電腦敵人據點。</span></button>
+            </div>
+          </section>
+
+          <div class="village-mode-bar" aria-label="村莊快速切換"><button class="village-mode active" data-village-panel="buildings">🏘️ 建築</button><button class="village-mode" data-village-panel="resources">🪵 資源</button><button class="village-mode" data-village-panel="training">⚔️ 訓練</button><span class="village-coach">圖片看不清楚時，直接用上方文字版操作區。</span></div>
 
           <div class="village-workbench" aria-label="村莊內部建築">
-            <article class="panel building-detail-panel"><div class="section-head inline-head"><div><p class="eyebrow">村內操作</p><h2>建築詳情</h2></div><span class="click-chip">點村莊圖上的建築</span></div><div id="buildingDetail" class="building-detail"></div></article>
+            <article class="panel building-detail-panel"><div class="section-head inline-head"><div><p class="eyebrow">村內操作</p><h2>建築詳情</h2></div><span class="click-chip">點村莊圖或文字操作區</span></div><div id="buildingDetail" class="building-detail"></div></article>
             <article class="panel building-list-panel"><div class="section-head inline-head"><div><p class="eyebrow">可點擊</p><h2>村內建築</h2></div></div><div id="buildingGrid" class="building-grid"></div></article>
           </div>
 
@@ -78,5 +97,29 @@
   <script src="./app.js"></script>
   <script src="./building.js"></script>
   <script src="./siege-addon.js"></script>
+  <script>
+    document.addEventListener('click', function (event) {
+      const textNode = event.target.closest('.text-node');
+      if (!textNode) return;
+      if (textNode.dataset.view) {
+        document.querySelector(`.nav[data-view="${textNode.dataset.view}"]`)?.click();
+        return;
+      }
+      if (textNode.dataset.jump === 'resources') {
+        document.querySelector('[data-village-panel="resources"]')?.click();
+        document.getElementById('resourcePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      if (textNode.dataset.jump === 'training') {
+        document.querySelector('[data-village-panel="training"]')?.click();
+        document.getElementById('trainingPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      if (textNode.dataset.building) {
+        document.querySelector(`[data-building="${textNode.dataset.building}"]`)?.click();
+        document.querySelector('.building-detail-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  </script>
 </body>
 </html>
