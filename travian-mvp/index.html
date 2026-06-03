@@ -10,276 +10,55 @@
   <body>
     <div class="game-shell">
       <header class="topbar" aria-label="遊戲資源列">
-        <div class="brand">
-          <div class="brand-mark" aria-hidden="true">村</div>
-          <div>
-            <h1>邊境村莊</h1>
-            <p>單人網頁策略小遊戲</p>
-          </div>
-        </div>
-
+        <div class="brand"><div class="brand-mark" aria-hidden="true">村</div><div><h1>邊境村莊</h1><p>單人網頁策略小遊戲</p></div></div>
         <section class="hud-grid" aria-label="目前資源與狀態">
-          <article class="hud-item wood" data-hud="wood">
-            <span class="hud-icon">🪵</span>
-            <span class="hud-label">木材</span>
-            <strong id="wood">0</strong>
-            <small id="woodRate">+0/h</small>
-            <small id="woodCap">上限 0</small>
-            <small id="woodFull">滿倉 --</small>
-          </article>
-          <article class="hud-item clay" data-hud="clay">
-            <span class="hud-icon">🧱</span>
-            <span class="hud-label">泥土</span>
-            <strong id="clay">0</strong>
-            <small id="clayRate">+0/h</small>
-            <small id="clayCap">上限 0</small>
-            <small id="clayFull">滿倉 --</small>
-          </article>
-          <article class="hud-item iron" data-hud="iron">
-            <span class="hud-icon">⛓️</span>
-            <span class="hud-label">鐵礦</span>
-            <strong id="iron">0</strong>
-            <small id="ironRate">+0/h</small>
-            <small id="ironCap">上限 0</small>
-            <small id="ironFull">滿倉 --</small>
-          </article>
-          <article class="hud-item crop" data-hud="crop">
-            <span class="hud-icon">🌾</span>
-            <span class="hud-label">穀物</span>
-            <strong id="crop">0</strong>
-            <small id="cropRate">+0/h</small>
-            <small id="cropCap">上限 0</small>
-            <small id="cropFull">滿倉 --</small>
-          </article>
-          <article class="hud-item status" data-hud="population">
-            <span class="hud-icon">👥</span>
-            <span class="hud-label">人口</span>
-            <strong id="population">0</strong>
-            <small>村莊規模</small>
-          </article>
-          <article class="hud-item status" data-hud="soldiers">
-            <span class="hud-icon">⚔️</span>
-            <span class="hud-label">士兵</span>
-            <strong id="soldiers">0</strong>
-            <small id="cropUse">耗糧 0/h</small>
-          </article>
-          <article class="hud-item status" data-hud="turn">
-            <span class="hud-icon">🔁</span>
-            <span class="hud-label">回合</span>
-            <strong id="turn">1</strong>
-            <small>行動紀錄</small>
-          </article>
+          <article class="hud-item wood" data-hud="wood"><span class="hud-icon">🪵</span><span class="hud-label">木材</span><strong id="wood">0</strong><small id="woodRate">+0/h</small><small id="woodCap">上限 0</small><small id="woodFull">滿倉 --</small></article>
+          <article class="hud-item clay" data-hud="clay"><span class="hud-icon">🧱</span><span class="hud-label">泥土</span><strong id="clay">0</strong><small id="clayRate">+0/h</small><small id="clayCap">上限 0</small><small id="clayFull">滿倉 --</small></article>
+          <article class="hud-item iron" data-hud="iron"><span class="hud-icon">⛓️</span><span class="hud-label">鐵礦</span><strong id="iron">0</strong><small id="ironRate">+0/h</small><small id="ironCap">上限 0</small><small id="ironFull">滿倉 --</small></article>
+          <article class="hud-item crop" data-hud="crop"><span class="hud-icon">🌾</span><span class="hud-label">穀物</span><strong id="crop">0</strong><small id="cropRate">+0/h</small><small id="cropCap">上限 0</small><small id="cropFull">滿倉 --</small></article>
+          <article class="hud-item status" data-hud="population"><span class="hud-icon">👥</span><span class="hud-label">人口</span><strong id="population">0</strong><small>村莊規模</small></article>
+          <article class="hud-item status" data-hud="soldiers"><span class="hud-icon">⚔️</span><span class="hud-label">士兵</span><strong id="soldiers">0</strong><small id="cropUse">耗糧 0/h</small></article>
+          <article class="hud-item status" data-hud="turn"><span class="hud-icon">🔁</span><span class="hud-label">回合</span><strong id="turn">1</strong><small>行動紀錄</small></article>
         </section>
       </header>
-
       <div class="layout">
         <aside class="sidebar" aria-label="主選單">
           <nav class="main-nav">
-            <button class="nav active" data-view="village"><span>🏠</span><b>村莊</b></button>
-            <button class="nav" data-view="map"><span>🗺️</span><b>地圖</b></button>
-            <button class="nav" data-view="military"><span>⚔️</span><b>軍事</b></button>
-            <button class="nav" data-view="reports"><span>📜</span><b>戰報</b></button>
-            <button class="nav" data-view="save"><span>💾</span><b>存檔</b></button>
+            <button class="nav active" data-view="village"><span>🏠</span><b>村莊</b></button><button class="nav" data-view="map"><span>🗺️</span><b>地圖</b></button><button class="nav" data-view="military"><span>⚔️</span><b>軍事</b></button><button class="nav" data-view="reports"><span>📜</span><b>戰報</b></button><button class="nav" data-view="save"><span>💾</span><b>存檔</b></button>
           </nav>
-
-          <section class="task-box" aria-label="目前任務">
-            <h2>目前任務</h2>
-            <ol id="questList"></ol>
-            <div id="nextStep" class="next-step">下一步：點擊一塊資源田並升級。</div>
-          </section>
+          <section class="task-box" aria-label="目前任務"><h2>目前任務</h2><ol id="questList"></ol><div id="nextStep" class="next-step">下一步：點擊一塊資源田並升級。</div></section>
         </aside>
-
         <main class="content">
           <div id="notice" class="notice" role="status">歡迎回到邊境村莊。先升級一塊資源田，再去地圖偵察綠洲。</div>
-
           <section id="village" class="view active-view">
             <div class="hero-panel">
-              <div class="hero-copy">
-                <p class="eyebrow">你的據點</p>
-                <h2>黎明河谷</h2>
-                <p>資源會按時間成長。先升級資源田、訓練棍棒兵，再前往地圖清除綠洲。</p>
-                <dl class="quick-stats">
-                  <div><dt>村莊</dt><dd>你的村莊</dd></div>
-                  <div><dt>勝率</dt><dd id="winRate">0%</dd></div>
-                  <div><dt>本機自動存檔</dt><dd id="lastSavedMini">尚無</dd></div>
-                </dl>
-              </div>
+              <div class="hero-copy"><p class="eyebrow">你的據點</p><h2>黎明河谷</h2><p>資源會按時間成長。先升級資源田、訓練棍棒兵，再前往地圖清除綠洲。</p><dl class="quick-stats"><div><dt>村莊</dt><dd>你的村莊</dd></div><div><dt>勝率</dt><dd id="winRate">0%</dd></div><div><dt>本機自動存檔</dt><dd id="lastSavedMini">尚無</dd></div></dl></div>
               <div id="villageArt" class="village-art" aria-label="可點擊的村莊建築示意圖">
-                <span class="sun"></span>
-                <span class="river"></span>
-                <span class="wall"></span>
-                <button type="button" class="building-hotspot keep" data-building="main" aria-label="進入主樓">
-                  <span>🏛️</span><b>主樓</b>
-                </button>
-                <button type="button" class="building-hotspot house h1" data-building="warehouse" aria-label="進入倉庫">
-                  <span>📦</span><b>倉庫</b>
-                </button>
-                <button type="button" class="building-hotspot house h2" data-building="barracks" aria-label="進入兵營">
-                  <span>⚔️</span><b>兵營</b>
-                </button>
-                <button type="button" class="building-hotspot house h3" data-building="rally" aria-label="進入集結點">
-                  <span>🚩</span><b>集結點</b>
-                </button>
-                <span class="trees t1"></span>
-                <span class="trees t2"></span>
-                <button type="button" class="resource-hotspot field-patch p1" data-field-jump="wood_0" aria-label="前往伐木場升級">
-                  <span>🪵</span><b>伐木場</b>
-                </button>
-                <button type="button" class="resource-hotspot field-patch p2" data-field-jump="crop_12" aria-label="前往農田升級">
-                  <span>🌾</span><b>農田</b>
-                </button>
+                <span class="sun"></span><span class="river"></span><span class="wall"></span>
+                <button type="button" class="building-hotspot keep" data-building="main" aria-label="進入主樓"><span>🏛️</span><b>主樓</b></button>
+                <button type="button" class="building-hotspot house h1" data-building="warehouse" aria-label="進入倉庫"><span>📦</span><b>倉庫</b></button>
+                <button type="button" class="building-hotspot house h2" data-building="barracks" aria-label="進入兵營"><span>⚔️</span><b>兵營</b></button>
+                <button type="button" class="building-hotspot house h3" data-building="rally" aria-label="進入集結點"><span>🚩</span><b>集結點</b></button>
+                <span class="trees t1"></span><span class="trees t2"></span>
+                <button type="button" class="resource-hotspot field-patch p1" data-field-jump="wood_0" aria-label="前往伐木場升級"><span>🪵</span><b>伐木場</b></button>
+                <button type="button" class="resource-hotspot field-patch p2" data-field-jump="crop_12" aria-label="前往農田升級"><span>🌾</span><b>農田</b></button>
               </div>
             </div>
-
             <div class="village-workbench" aria-label="村莊內部建築">
-              <article class="panel building-detail-panel">
-                <div class="section-head inline-head">
-                  <div>
-                    <p class="eyebrow">村內操作</p>
-                    <h2>建築詳情</h2>
-                  </div>
-                  <span class="click-chip">點村莊圖上的建築</span>
-                </div>
-                <div id="buildingDetail" class="building-detail"></div>
-              </article>
-              <article class="panel building-list-panel">
-                <div class="section-head inline-head">
-                  <div>
-                    <p class="eyebrow">可點擊</p>
-                    <h2>村內建築</h2>
-                  </div>
-                </div>
-                <div id="buildingGrid" class="building-grid"></div>
-              </article>
+              <article class="panel building-detail-panel"><div class="section-head inline-head"><div><p class="eyebrow">村內操作</p><h2>建築詳情</h2></div><span class="click-chip">點村莊圖上的建築</span></div><div id="buildingDetail" class="building-detail"></div></article>
+              <article class="panel building-list-panel"><div class="section-head inline-head"><div><p class="eyebrow">可點擊</p><h2>村內建築</h2></div></div><div id="buildingGrid" class="building-grid"></div></article>
             </div>
-
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">可互動</p>
-                <h2>資源田</h2>
-              </div>
-              <div class="button-row compact-row">
-                <button id="collectBtn">🌿 收成 / 更新資源</button>
-                <button id="simulateHourBtn">⏩ 模擬 1 小時</button>
-              </div>
-            </div>
-            <div id="fieldGrid" class="field-grid" aria-label="資源田"></div>
-
-            <div class="section-head compact">
-              <div>
-                <p class="eyebrow">兵營</p>
-                <h2>訓練士兵</h2>
-              </div>
-              <p class="section-hint">目前士兵：<strong id="villageTroopCount">0</strong></p>
-            </div>
-            <div id="trainingGridVillage" class="training-grid"></div>
+            <div class="section-head"><div><p class="eyebrow">可互動</p><h2>資源田</h2></div><div class="button-row compact-row"><button id="collectBtn">🌿 收成 / 更新資源</button><button id="simulateHourBtn">⏩ 模擬 1 小時</button></div></div><div id="fieldGrid" class="field-grid" aria-label="資源田"></div>
+            <div class="section-head compact"><div><p class="eyebrow">兵營</p><h2>訓練士兵</h2></div><p class="section-hint">目前士兵：<strong id="villageTroopCount">0</strong></p></div><div id="trainingGridVillage" class="training-grid"></div>
           </section>
-
-          <section id="map" class="view">
-            <div class="split map-split">
-              <div>
-                <div class="section-head">
-                  <div>
-                    <p class="eyebrow">Step 1 / Step 2</p>
-                    <h2>世界地圖</h2>
-                  </div>
-                </div>
-                <div class="map-help">點擊 🌳 綠洲或 🐾 野獸營地後，下方會出現出兵面板。</div>
-                <div class="map-scroll">
-                  <div id="mapGrid" class="map-grid" aria-label="地圖方格"></div>
-                </div>
-              </div>
-              <aside class="panel target-panel">
-                <div class="step-strip" aria-label="出兵流程">
-                  <span class="step-pill done">1 前往地圖</span>
-                  <span id="stepSelect" class="step-pill">2 選目標</span>
-                  <span id="stepAttack" class="step-pill">3 攻擊</span>
-                </div>
-                <h2>出兵攻擊</h2>
-                <div id="targetCard" class="target-card">請先點擊地圖上的綠洲或野獸營地。</div>
-                <div class="send-grid">
-                  <label>棍棒兵<input id="sendClub" type="number" min="0" value="4" /></label>
-                  <label>矛兵<input id="sendSpear" type="number" min="0" value="1" /></label>
-                </div>
-                <button id="attackBtn" class="primary full">⚔️ 攻擊目標</button>
-                <div id="battleResult" class="battle-result muted-result">尚未交戰。</div>
-              </aside>
-            </div>
-          </section>
-
-          <section id="military" class="view">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">部隊管理</p>
-                <h2>軍事</h2>
-              </div>
-            </div>
-            <div class="split">
-              <article class="panel">
-                <h2>目前兵力</h2>
-                <div id="troopSummary" class="troop-summary"></div>
-              </article>
-              <article class="panel">
-                <h2>訓練士兵</h2>
-                <div id="trainingGridMilitary" class="training-grid"></div>
-                <p class="hint">出兵請到「地圖」選擇目標；這裡負責補兵。</p>
-              </article>
-            </div>
-          </section>
-
-          <section id="reports" class="view">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">軍事紀錄</p>
-                <h2>戰報</h2>
-              </div>
-            </div>
-            <ol id="reportList" class="report-list"></ol>
-          </section>
-
-          <section id="save" class="view">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">自動備份</p>
-                <h2>存檔設定</h2>
-              </div>
-            </div>
-            <div class="split">
-              <article class="panel">
-                <h2>Google Sheets 雲端同步</h2>
-                <p id="cloudSyncStatus" class="sync-status">目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。</p>
-                <label>Apps Script endpoint<input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" /></label>
-                <label>Sync token<input id="tokenInput" type="password" placeholder="如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組" /></label>
-                <div class="button-row">
-                  <button id="saveEndpointBtn">💾 儲存設定</button>
-                  <button id="loadCloudBtn">☁️ 載入雲端存檔</button>
-                  <button id="syncSheetBtn" class="primary">☁️ 立即同步</button>
-                </div>
-                <p id="saveStatus" class="status-line">尚未同步。</p>
-              </article>
-              <article class="panel">
-                <h2>本機自動存檔</h2>
-                <p>升級、訓練、攻擊、完成任務會自動寫入 localStorage；每 30 秒也會自動保存一次。</p>
-                <div class="save-meter">
-                  <span>本機自動存檔</span>
-                  <strong id="localSaveStatus">尚無</strong>
-                </div>
-                <div class="save-meter">
-                  <span>雲端同步</span>
-                  <strong id="cloudStatusBadge">未設定</strong>
-                </div>
-                <div class="button-row">
-                  <button id="saveLocalBtn">💾 立即本機存檔</button>
-                  <button id="exportBtn">📦 匯出 JSON</button>
-                  <button id="resetBtn" class="danger">🧹 重置遊戲</button>
-                </div>
-                <p class="hint">最近存檔：<span id="lastSaved">尚無</span></p>
-              </article>
-            </div>
-          </section>
+          <section id="map" class="view"><div class="split map-split"><div><div class="section-head"><div><p class="eyebrow">Step 1 / Step 2</p><h2>世界地圖</h2></div></div><div class="map-help">點擊 🌳 綠洲或 🐾 野獸營地後，下方會出現出兵面板。</div><div class="map-scroll"><div id="mapGrid" class="map-grid" aria-label="地圖方格"></div></div></div><aside class="panel target-panel"><div class="step-strip" aria-label="出兵流程"><span class="step-pill done">1 前往地圖</span><span id="stepSelect" class="step-pill">2 選目標</span><span id="stepAttack" class="step-pill">3 攻擊</span></div><h2>出兵攻擊</h2><div id="targetCard" class="target-card">請先點擊地圖上的綠洲或野獸營地。</div><div class="send-grid"><label>棍棒兵<input id="sendClub" type="number" min="0" value="4" /></label><label>矛兵<input id="sendSpear" type="number" min="0" value="1" /></label></div><button id="attackBtn" class="primary full">⚔️ 攻擊目標</button><div id="battleResult" class="battle-result muted-result">尚未交戰。</div></aside></div></section>
+          <section id="military" class="view"><div class="section-head"><div><p class="eyebrow">部隊管理</p><h2>軍事</h2></div></div><div class="split"><article class="panel"><h2>目前兵力</h2><div id="troopSummary" class="troop-summary"></div></article><article class="panel"><h2>訓練士兵</h2><div id="trainingGridMilitary" class="training-grid"></div><p class="hint">出兵請到「地圖」選擇目標；這裡負責補兵。</p></article></div></section>
+          <section id="reports" class="view"><div class="section-head"><div><p class="eyebrow">軍事紀錄</p><h2>戰報</h2></div></div><ol id="reportList" class="report-list"></ol></section>
+          <section id="save" class="view"><div class="section-head"><div><p class="eyebrow">自動備份</p><h2>存檔設定</h2></div></div><div class="split"><article class="panel"><h2>Google Sheets 雲端同步</h2><p id="cloudSyncStatus" class="sync-status">目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。</p><label>Apps Script endpoint<input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec" /></label><label>Sync token<input id="tokenInput" type="password" placeholder="如果 Code.gs 有設定 SECRET_TOKEN，這裡填同一組" /></label><div class="button-row"><button id="saveEndpointBtn">💾 儲存設定</button><button id="loadCloudBtn">☁️ 載入雲端存檔</button><button id="syncSheetBtn" class="primary">☁️ 立即同步</button></div><p id="saveStatus" class="status-line">尚未同步。</p></article><article class="panel"><h2>本機自動存檔</h2><p>升級、訓練、攻擊、完成任務會自動寫入 localStorage；每 30 秒也會自動保存一次。</p><div class="save-meter"><span>本機自動存檔</span><strong id="localSaveStatus">尚無</strong></div><div class="save-meter"><span>雲端同步</span><strong id="cloudStatusBadge">未設定</strong></div><div class="button-row"><button id="saveLocalBtn">💾 立即本機存檔</button><button id="exportBtn">📦 匯出 JSON</button><button id="resetBtn" class="danger">🧹 重置遊戲</button></div><p class="hint">最近存檔：<span id="lastSaved">尚無</span></p></article></div></section>
         </main>
       </div>
     </div>
     <script src="./app.js"></script>
+    <script src="./building.js"></script>
   </body>
 </html>
