@@ -104,19 +104,53 @@
                   <div><dt>本機自動存檔</dt><dd id="lastSavedMini">尚無</dd></div>
                 </dl>
               </div>
-              <div class="village-art" aria-label="村莊示意圖">
+              <div id="villageArt" class="village-art" aria-label="可點擊的村莊建築示意圖">
                 <span class="sun"></span>
                 <span class="river"></span>
                 <span class="wall"></span>
-                <span class="keep"></span>
-                <span class="house h1"></span>
-                <span class="house h2"></span>
-                <span class="house h3"></span>
+                <button type="button" class="building-hotspot keep" data-building="main" aria-label="進入主樓">
+                  <span>🏛️</span><b>主樓</b>
+                </button>
+                <button type="button" class="building-hotspot house h1" data-building="warehouse" aria-label="進入倉庫">
+                  <span>📦</span><b>倉庫</b>
+                </button>
+                <button type="button" class="building-hotspot house h2" data-building="barracks" aria-label="進入兵營">
+                  <span>⚔️</span><b>兵營</b>
+                </button>
+                <button type="button" class="building-hotspot house h3" data-building="rally" aria-label="進入集結點">
+                  <span>🚩</span><b>集結點</b>
+                </button>
                 <span class="trees t1"></span>
                 <span class="trees t2"></span>
-                <span class="field-patch p1"></span>
-                <span class="field-patch p2"></span>
+                <button type="button" class="resource-hotspot field-patch p1" data-field-jump="wood_0" aria-label="前往伐木場升級">
+                  <span>🪵</span><b>伐木場</b>
+                </button>
+                <button type="button" class="resource-hotspot field-patch p2" data-field-jump="crop_12" aria-label="前往農田升級">
+                  <span>🌾</span><b>農田</b>
+                </button>
               </div>
+            </div>
+
+            <div class="village-workbench" aria-label="村莊內部建築">
+              <article class="panel building-detail-panel">
+                <div class="section-head inline-head">
+                  <div>
+                    <p class="eyebrow">村內操作</p>
+                    <h2>建築詳情</h2>
+                  </div>
+                  <span class="click-chip">點村莊圖上的建築</span>
+                </div>
+                <div id="buildingDetail" class="building-detail"></div>
+              </article>
+              <article class="panel building-list-panel">
+                <div class="section-head inline-head">
+                  <div>
+                    <p class="eyebrow">可點擊</p>
+                    <h2>村內建築</h2>
+                  </div>
+                </div>
+                <div id="buildingGrid" class="building-grid"></div>
+              </article>
             </div>
 
             <div class="section-head">
