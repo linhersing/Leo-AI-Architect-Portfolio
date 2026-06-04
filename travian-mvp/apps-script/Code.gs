@@ -1,5 +1,6 @@
 const SPREADSHEET_ID = '1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2ZXc';
 const SECRET_TOKEN = '';
+const BACKEND_VERSION = 'cloud-v3-jsonp-form-2026-06-04';
 
 const PLAYER_STATE_SHEET = 'player_state';
 const BATTLE_LOGS_SHEET = 'battle_logs';
@@ -12,7 +13,7 @@ const ACTION_LOG_HEADERS = ['id', 'time', 'iso_time', 'turn', 'type', 'message',
 function doPost(e) {
   try {
     const payload = parsePayload_(e);
-    if (SECRET_TOKEN && payload.token !== SECRET_TOKEN) return json({ ok: false, error: 'Invalid token' });
+    if (SECRET_TOKEN && payload.token !== SECRET_TOKEN) return json({ ok: false, error: 'Invalid token', backendVersion: BACKEND_VERSION });
 
     if (payload.action === 'setup' || payload.action === 'ping') return json(setup());
     if (payload.action === 'saveState' || payload.action === 'save') return json(saveState(payload));
@@ -20,16 +21,16 @@ function doPost(e) {
     if (payload.action === 'appendBattleLog') return json(appendBattleLog(payload.battleLog || payload.log));
     if (payload.action === 'appendActionLog') return json(appendActionLog(payload.actionLog || payload.log));
 
-    return json({ ok: false, error: 'Unsupported action: ' + payload.action });
+    return json({ ok: false, error: 'Unsupported action: ' + payload.action, backendVersion: BACKEND_VERSION });
   } catch (error) {
-    return json({ ok: false, error: String(error.message || error) });
+    return json({ ok: false, error: String(error.message || error), backendVersion: BACKEND_VERSION });
   }
 }
 
 function doGet(e) {
   const params = (e && e.parameter) || {};
   try {
-    if (SECRET_TOKEN && params.token !== SECRET_TOKEN) return respond_(params, { ok: false, error: 'Invalid token' });
+    if (SECRET_TOKEN && params.token !== SECRET_TOKEN) return respond_(params, { ok: false, error: 'Invalid token', backendVersion: BACKEND_VERSION });
 
     let result;
     if (params.action === 'loadState') result = loadState();
@@ -37,13 +38,13 @@ function doGet(e) {
 
     return respond_(params, result);
   } catch (error) {
-    return respond_(params, { ok: false, error: String(error.message || error) });
+    return respond_(params, { ok: false, error: String(error.message || error), backendVersion: BACKEND_VERSION });
   }
 }
 
 function setup() {
   setupSheets_();
-  return { ok: true, spreadsheetId: SPREADSHEET_ID, sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET], message: 'Google Sheets save backend ready' };
+  return { ok: true, backendVersion: BACKEND_VERSION, spreadsheetId: SPREADSHEET_ID, sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET], message: 'Google Sheets save backend ready' };
 }
 
 function saveState(payload) {
@@ -52,7 +53,7 @@ function saveState(payload) {
   try {
     const ss = setupSheets_();
     const state = payload.state;
-    if (!state) return { ok: false, error: 'Missing state' };
+    if (!state) return { ok: false, error: 'Missing state', backendVersion: BACKEND_VERSION };
 
     const savedAt = payload.savedAt || new Date().toISOString();
     const sheet = ss.getSheetByName(PLAYER_STATE_SHEET);
@@ -70,7 +71,7 @@ function saveState(payload) {
         floorResource_(state, 'crop'),
         totalTroops_(state),
         state.reports ? state.reports.length : 0,
-        state.version || '',
+        state.version || state.cloudSaveId || '',
         JSON.stringify(state),
       ],
     ]);
@@ -79,7 +80,7 @@ function saveState(payload) {
     (payload.battleLogs || []).forEach(function (log) { appendBattleLog(log, ss); });
     (payload.actionLogs || []).forEach(function (log) { appendActionLog(log, ss); });
 
-    return { ok: true, savedAt: savedAt, stateRow: 2, battleLogs: (payload.battleLogs || []).length, actionLogs: (payload.actionLogs || []).length };
+    return { ok: true, backendVersion: BACKEND_VERSION, savedAt: savedAt, cloudSaveId: state.cloudSaveId || '', stateRow: 2, battleLogs: (payload.battleLogs || []).length, actionLogs: (payload.actionLogs || []).length };
   } finally {
     lock.releaseLock();
   }
@@ -89,19 +90,19 @@ function loadState() {
   const ss = setupSheets_();
   const sheet = ss.getSheetByName(PLAYER_STATE_SHEET);
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return { ok: false, error: 'No cloud save found' };
+  if (lastRow < 2) return { ok: false, error: 'No cloud save found', backendVersion: BACKEND_VERSION };
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(2, 1, 1, sheet.getLastColumn()).getValues()[0];
   const stateIndex = headers.indexOf('state_json');
   const savedAtIndex = headers.indexOf('saved_at');
-  if (stateIndex < 0 || !values[stateIndex]) return { ok: false, error: 'Missing state_json' };
+  if (stateIndex < 0 || !values[stateIndex]) return { ok: false, error: 'Missing state_json', backendVersion: BACKEND_VERSION };
 
-  return { ok: true, savedAt: savedAtIndex >= 0 ? values[savedAtIndex] : '', state: JSON.parse(values[stateIndex]) };
+  return { ok: true, backendVersion: BACKEND_VERSION, savedAt: savedAtIndex >= 0 ? values[savedAtIndex] : '', state: JSON.parse(values[stateIndex]) };
 }
 
 function appendBattleLog(log, ssArg) {
-  if (!log) return { ok: false, error: 'Missing battle log' };
+  if (!log) return { ok: false, error: 'Missing battle log', backendVersion: BACKEND_VERSION };
   const ss = ssArg || setupSheets_();
   const sheet = ss.getSheetByName(BATTLE_LOGS_SHEET);
   ensureHeader_(sheet, BATTLE_LOG_HEADERS);
@@ -120,11 +121,11 @@ function appendBattleLog(log, ssArg) {
     JSON.stringify(log.damage || []),
     JSON.stringify(log),
   ]);
-  return { ok: true };
+  return { ok: true, backendVersion: BACKEND_VERSION };
 }
 
 function appendActionLog(log, ssArg) {
-  if (!log) return { ok: false, error: 'Missing action log' };
+  if (!log) return { ok: false, error: 'Missing action log', backendVersion: BACKEND_VERSION };
   const ss = ssArg || setupSheets_();
   const sheet = ss.getSheetByName(ACTION_LOGS_SHEET);
   ensureHeader_(sheet, ACTION_LOG_HEADERS);
@@ -138,7 +139,7 @@ function appendActionLog(log, ssArg) {
     JSON.stringify(log.details || {}),
     JSON.stringify(log),
   ]);
-  return { ok: true };
+  return { ok: true, backendVersion: BACKEND_VERSION };
 }
 
 function setupSheets_() {
@@ -176,7 +177,17 @@ function totalTroops_(state) {
 }
 
 function parsePayload_(e) {
-  return JSON.parse((e && e.postData && e.postData.contents) || '{}');
+  if (e && e.parameter && e.parameter.payload) return JSON.parse(e.parameter.payload);
+  const raw = (e && e.postData && e.postData.contents) || '{}';
+  if (raw.charAt(0) === '{') return JSON.parse(raw);
+
+  const payloadMatch = raw.match(/(?:^|&)payload=([^&]+)/);
+  if (payloadMatch) return JSON.parse(decodeURIComponent(payloadMatch[1].replace(/\+/g, ' ')));
+
+  const textPlainMatch = raw.match(/payload\s*=\s*(\{[\s\S]*\})/);
+  if (textPlainMatch) return JSON.parse(textPlainMatch[1]);
+
+  return JSON.parse(raw || '{}');
 }
 
 function respond_(params, data) {
