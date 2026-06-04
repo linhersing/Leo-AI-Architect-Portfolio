@@ -1,14 +1,20 @@
 const SPREADSHEET_ID = '1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2ZXc';
 const SECRET_TOKEN = '';
-const BACKEND_VERSION = 'cloud-v3-jsonp-form-2026-06-04';
+const BACKEND_VERSION = 'cloud-v4-maintenance-2026-06-04';
 
 const PLAYER_STATE_SHEET = 'player_state';
 const BATTLE_LOGS_SHEET = 'battle_logs';
 const ACTION_LOGS_SHEET = 'action_logs';
+const LOG_SUMMARY_SHEET = 'log_summary';
+
+const MAX_BATTLE_LOG_ROWS = 300;
+const MAX_ACTION_LOG_ROWS = 500;
+const MAINTENANCE_INTERVAL_MS = 10 * 60 * 1000;
 
 const PLAYER_STATE_HEADERS = ['saved_at', 'source', 'reason', 'turn', 'wood', 'clay', 'iron', 'crop', 'soldiers', 'reports', 'version', 'state_json'];
 const BATTLE_LOG_HEADERS = ['id', 'time', 'iso_time', 'type', 'target', 'coordinate', 'result', 'sent', 'losses', 'loot', 'cleared', 'damage', 'raw_json'];
 const ACTION_LOG_HEADERS = ['id', 'time', 'iso_time', 'turn', 'type', 'message', 'details', 'raw_json'];
+const LOG_SUMMARY_HEADERS = ['run_at', 'sheet', 'before_rows', 'after_rows', 'duplicates_removed', 'old_rows_removed', 'max_rows'];
 
 function doPost(e) {
   try {
@@ -20,6 +26,8 @@ function doPost(e) {
     if (payload.action === 'loadState') return json(loadState());
     if (payload.action === 'appendBattleLog') return json(appendBattleLog(payload.battleLog || payload.log));
     if (payload.action === 'appendActionLog') return json(appendActionLog(payload.actionLog || payload.log));
+    if (payload.action === 'compactLogs' || payload.action === 'maintenance') return json(compactLogs());
+    if (payload.action === 'stats') return json(getStats());
 
     return json({ ok: false, error: 'Unsupported action: ' + payload.action, backendVersion: BACKEND_VERSION });
   } catch (error) {
@@ -34,6 +42,7 @@ function doGet(e) {
 
     let result;
     if (params.action === 'loadState') result = loadState();
+    else if (params.action === 'stats') result = getStats();
     else result = setup();
 
     return respond_(params, result);
@@ -44,7 +53,14 @@ function doGet(e) {
 
 function setup() {
   setupSheets_();
-  return { ok: true, backendVersion: BACKEND_VERSION, spreadsheetId: SPREADSHEET_ID, sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET], message: 'Google Sheets save backend ready' };
+  return {
+    ok: true,
+    backendVersion: BACKEND_VERSION,
+    spreadsheetId: SPREADSHEET_ID,
+    sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET, LOG_SUMMARY_SHEET],
+    limits: { battleLogs: MAX_BATTLE_LOG_ROWS, actionLogs: MAX_ACTION_LOG_ROWS },
+    message: 'Google Sheets save backend ready',
+  };
 }
 
 function saveState(payload) {
@@ -77,10 +93,20 @@ function saveState(payload) {
     ]);
     sheet.setFrozenRows(1);
 
-    (payload.battleLogs || []).forEach(function (log) { appendBattleLog(log, ss); });
-    (payload.actionLogs || []).forEach(function (log) { appendActionLog(log, ss); });
+    const battleResult = appendLogs_(BATTLE_LOGS_SHEET, BATTLE_LOG_HEADERS, payload.battleLogs || [], battleRow_);
+    const actionResult = appendLogs_(ACTION_LOGS_SHEET, ACTION_LOG_HEADERS, payload.actionLogs || [], actionRow_);
+    const maintenance = maybeCompactLogs_();
 
-    return { ok: true, backendVersion: BACKEND_VERSION, savedAt: savedAt, cloudSaveId: state.cloudSaveId || '', stateRow: 2, battleLogs: (payload.battleLogs || []).length, actionLogs: (payload.actionLogs || []).length };
+    return {
+      ok: true,
+      backendVersion: BACKEND_VERSION,
+      savedAt: savedAt,
+      cloudSaveId: state.cloudSaveId || '',
+      stateRow: 2,
+      battleLogs: battleResult,
+      actionLogs: actionResult,
+      maintenance: maintenance,
+    };
   } finally {
     lock.releaseLock();
   }
@@ -104,42 +130,134 @@ function loadState() {
 function appendBattleLog(log, ssArg) {
   if (!log) return { ok: false, error: 'Missing battle log', backendVersion: BACKEND_VERSION };
   const ss = ssArg || setupSheets_();
-  const sheet = ss.getSheetByName(BATTLE_LOGS_SHEET);
-  ensureHeader_(sheet, BATTLE_LOG_HEADERS);
-  sheet.appendRow([
-    log.id || '',
-    log.time || '',
-    log.isoTime || new Date().toISOString(),
-    log.type || 'attack',
-    log.target || '',
-    log.coordinate || '',
-    log.result || '',
-    JSON.stringify(log.sent || {}),
-    JSON.stringify(log.losses || {}),
-    JSON.stringify(log.loot || {}),
-    Boolean(log.cleared),
-    JSON.stringify(log.damage || []),
-    JSON.stringify(log),
-  ]);
-  return { ok: true, backendVersion: BACKEND_VERSION };
+  return appendLogs_(BATTLE_LOGS_SHEET, BATTLE_LOG_HEADERS, [log], battleRow_, ss);
 }
 
 function appendActionLog(log, ssArg) {
   if (!log) return { ok: false, error: 'Missing action log', backendVersion: BACKEND_VERSION };
   const ss = ssArg || setupSheets_();
-  const sheet = ss.getSheetByName(ACTION_LOGS_SHEET);
-  ensureHeader_(sheet, ACTION_LOG_HEADERS);
-  sheet.appendRow([
-    log.id || '',
-    log.time || '',
-    log.isoTime || new Date().toISOString(),
-    log.turn || 0,
-    log.type || '',
-    log.message || '',
-    JSON.stringify(log.details || {}),
-    JSON.stringify(log),
-  ]);
-  return { ok: true, backendVersion: BACKEND_VERSION };
+  return appendLogs_(ACTION_LOGS_SHEET, ACTION_LOG_HEADERS, [log], actionRow_, ss);
+}
+
+function appendLogs_(sheetName, headers, logs, rowFactory, ssArg) {
+  const ss = ssArg || setupSheets_();
+  const sheet = ss.getSheetByName(sheetName);
+  ensureHeader_(sheet, headers);
+  const existingIds = getExistingIds_(sheet);
+  const rows = [];
+  let skipped = 0;
+
+  logs.forEach(function (log) {
+    if (!log) return;
+    const id = String(log.id || '');
+    if (id && existingIds[id]) {
+      skipped += 1;
+      return;
+    }
+    if (id) existingIds[id] = true;
+    rows.push(rowFactory(log));
+  });
+
+  if (rows.length) sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  return { ok: true, backendVersion: BACKEND_VERSION, appended: rows.length, skippedDuplicates: skipped };
+}
+
+function getExistingIds_(sheet) {
+  const ids = {};
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return ids;
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  values.forEach(function (row) {
+    const id = String(row[0] || '');
+    if (id) ids[id] = true;
+  });
+  return ids;
+}
+
+function compactLogs() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = setupSheets_();
+    const battle = compactLogSheet_(ss.getSheetByName(BATTLE_LOGS_SHEET), BATTLE_LOG_HEADERS, MAX_BATTLE_LOG_ROWS);
+    const action = compactLogSheet_(ss.getSheetByName(ACTION_LOGS_SHEET), ACTION_LOG_HEADERS, MAX_ACTION_LOG_ROWS);
+    PropertiesService.getDocumentProperties().setProperty('lastMaintenanceAt', String(Date.now()));
+    return { ok: true, backendVersion: BACKEND_VERSION, battleLogs: battle, actionLogs: action, stats: getStats() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function maybeCompactLogs_() {
+  const props = PropertiesService.getDocumentProperties();
+  const last = Number(props.getProperty('lastMaintenanceAt') || 0);
+  if (Date.now() - last < MAINTENANCE_INTERVAL_MS) return { ok: true, skipped: true, reason: 'interval' };
+
+  const ss = setupSheets_();
+  const battleRows = Math.max(0, ss.getSheetByName(BATTLE_LOGS_SHEET).getLastRow() - 1);
+  const actionRows = Math.max(0, ss.getSheetByName(ACTION_LOGS_SHEET).getLastRow() - 1);
+  if (battleRows <= MAX_BATTLE_LOG_ROWS && actionRows <= MAX_ACTION_LOG_ROWS) {
+    props.setProperty('lastMaintenanceAt', String(Date.now()));
+    return { ok: true, skipped: true, reason: 'under_limit', battleRows: battleRows, actionRows: actionRows };
+  }
+  return compactLogs();
+}
+
+function compactLogSheet_(sheet, headers, maxRows) {
+  ensureHeader_(sheet, headers);
+  const beforeRows = Math.max(0, sheet.getLastRow() - 1);
+  if (beforeRows <= 0) return writeSummary_(sheet.getName(), beforeRows, 0, 0, 0, maxRows);
+
+  const width = headers.length;
+  const rows = sheet.getRange(2, 1, beforeRows, width).getValues();
+  const unique = {};
+  const deduped = [];
+
+  for (let i = rows.length - 1; i >= 0; i -= 1) {
+    const row = rows[i];
+    const id = String(row[0] || ('row_' + i));
+    if (unique[id]) continue;
+    unique[id] = true;
+    deduped.unshift(row);
+  }
+
+  deduped.sort(function (a, b) {
+    return Date.parse(b[2] || '') - Date.parse(a[2] || '');
+  });
+
+  const kept = deduped.slice(0, maxRows);
+  const duplicatesRemoved = rows.length - deduped.length;
+  const oldRowsRemoved = Math.max(0, deduped.length - kept.length);
+
+  sheet.clearContents();
+  sheet.getRange(1, 1, 1, width).setValues([headers]);
+  if (kept.length) sheet.getRange(2, 1, kept.length, width).setValues(kept);
+  sheet.setFrozenRows(1);
+
+  return writeSummary_(sheet.getName(), beforeRows, kept.length, duplicatesRemoved, oldRowsRemoved, maxRows);
+}
+
+function writeSummary_(sheetName, beforeRows, afterRows, duplicatesRemoved, oldRowsRemoved, maxRows) {
+  const ss = setupSheets_();
+  const sheet = ss.getSheetByName(LOG_SUMMARY_SHEET);
+  ensureHeader_(sheet, LOG_SUMMARY_HEADERS);
+  sheet.appendRow([new Date().toISOString(), sheetName, beforeRows, afterRows, duplicatesRemoved, oldRowsRemoved, maxRows]);
+  return { sheet: sheetName, beforeRows: beforeRows, afterRows: afterRows, duplicatesRemoved: duplicatesRemoved, oldRowsRemoved: oldRowsRemoved, maxRows: maxRows };
+}
+
+function getStats() {
+  const ss = setupSheets_();
+  return {
+    ok: true,
+    backendVersion: BACKEND_VERSION,
+    sheets: {
+      playerStateRows: Math.max(0, ss.getSheetByName(PLAYER_STATE_SHEET).getLastRow() - 1),
+      battleLogRows: Math.max(0, ss.getSheetByName(BATTLE_LOGS_SHEET).getLastRow() - 1),
+      actionLogRows: Math.max(0, ss.getSheetByName(ACTION_LOGS_SHEET).getLastRow() - 1),
+      summaryRows: Math.max(0, ss.getSheetByName(LOG_SUMMARY_SHEET).getLastRow() - 1),
+    },
+    limits: { battleLogs: MAX_BATTLE_LOG_ROWS, actionLogs: MAX_ACTION_LOG_ROWS },
+  };
 }
 
 function setupSheets_() {
@@ -147,6 +265,7 @@ function setupSheets_() {
   ensureSheet_(ss, PLAYER_STATE_SHEET, PLAYER_STATE_HEADERS);
   ensureSheet_(ss, BATTLE_LOGS_SHEET, BATTLE_LOG_HEADERS);
   ensureSheet_(ss, ACTION_LOGS_SHEET, ACTION_LOG_HEADERS);
+  ensureSheet_(ss, LOG_SUMMARY_SHEET, LOG_SUMMARY_HEADERS);
   return ss;
 }
 
@@ -165,6 +284,37 @@ function ensureHeader_(sheet, headers) {
   const existing = sheet.getRange(1, 1, 1, Math.max(headers.length, sheet.getLastColumn())).getValues()[0];
   const needsHeader = headers.some(function (header, index) { return existing[index] !== header; });
   if (needsHeader) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+}
+
+function battleRow_(log) {
+  return [
+    log.id || '',
+    log.time || '',
+    log.isoTime || new Date().toISOString(),
+    log.type || 'attack',
+    log.target || '',
+    log.coordinate || '',
+    log.result || '',
+    JSON.stringify(log.sent || {}),
+    JSON.stringify(log.losses || {}),
+    JSON.stringify(log.loot || {}),
+    Boolean(log.cleared),
+    JSON.stringify(log.damage || []),
+    JSON.stringify(log),
+  ];
+}
+
+function actionRow_(log) {
+  return [
+    log.id || '',
+    log.time || '',
+    log.isoTime || new Date().toISOString(),
+    log.turn || 0,
+    log.type || '',
+    log.message || '',
+    JSON.stringify(log.details || {}),
+    JSON.stringify(log),
+  ];
 }
 
 function floorResource_(state, key) {
