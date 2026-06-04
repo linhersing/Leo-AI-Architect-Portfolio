@@ -68,6 +68,7 @@ function freshState() {
     reports: [],
     actionLogs: [],
     lastBattle: null,
+    syncedLogIds: { battle: [], action: [] },
   };
 }
 
@@ -144,6 +145,10 @@ function normalize(saved) {
     incoming: saved.incoming && saved.incoming.arriveAt ? saved.incoming : createIncomingRaid(),
     reports: Array.isArray(saved.reports) ? saved.reports : [],
     actionLogs: Array.isArray(saved.actionLogs) ? saved.actionLogs : [],
+    syncedLogIds: {
+      battle: Array.isArray(saved.syncedLogIds?.battle) ? saved.syncedLogIds.battle.slice(0, 500) : [],
+      action: Array.isArray(saved.syncedLogIds?.action) ? saved.syncedLogIds.action.slice(0, 700) : [],
+    },
   };
 }
 
@@ -424,26 +429,56 @@ function syncCloudDebounced(reason) {
 async function syncCloud(reason = "手動同步") {
   try {
     updateCloudStatus("同步中...");
+    const actionLogs = unsyncedActionLogs();
+    const battleLogs = unsyncedBattleLogs();
     const payload = {
       action: "saveState",
       reason,
       savedAt: new Date().toISOString(),
       state: { ...state, cloudSaveId: `save_${Date.now()}` },
-      actionLogs: state.actionLogs.slice(0, 5),
-      battleLogs: state.reports.slice(0, 3),
+      actionLogs,
+      battleLogs,
     };
     await postByForm(payload);
     await wait(2800);
     const loaded = await loadCloudState();
     if (!loaded?.state?.village) throw new Error("雲端沒有讀回 state_json");
     state.lastCloudSaved = loaded.savedAt || new Date().toISOString();
+    markLogsSynced(actionLogs, battleLogs);
     completeQuest("cloud");
     saveLocal();
-    updateCloudStatus(`已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
+    updateCloudStatus(`已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}，新增 ${actionLogs.length} 筆操作、${battleLogs.length} 筆戰報）。`, "ok");
     render();
   } catch (error) {
     updateCloudStatus(`同步失敗：${error.message}`, "fail");
   }
+}
+
+function unsyncedActionLogs() {
+  const sent = new Set(state.syncedLogIds?.action || []);
+  return state.actionLogs.filter((log) => log.id && !sent.has(log.id)).slice(0, 20);
+}
+
+function unsyncedBattleLogs() {
+  const sent = new Set(state.syncedLogIds?.battle || []);
+  return state.reports.filter((log) => log.id && !sent.has(log.id)).slice(0, 20);
+}
+
+function markLogsSynced(actionLogs, battleLogs) {
+  state.syncedLogIds = state.syncedLogIds || { battle: [], action: [] };
+  const action = new Set(state.syncedLogIds.action || []);
+  const battle = new Set(state.syncedLogIds.battle || []);
+  actionLogs.forEach((log) => log.id && action.add(log.id));
+  battleLogs.forEach((log) => log.id && battle.add(log.id));
+  state.syncedLogIds.action = Array.from(action).slice(-700);
+  state.syncedLogIds.battle = Array.from(battle).slice(-500);
+}
+
+function markExistingLogsSynced() {
+  state.syncedLogIds = {
+    action: state.actionLogs.map((log) => log.id).filter(Boolean).slice(-700),
+    battle: state.reports.map((log) => log.id).filter(Boolean).slice(-500),
+  };
 }
 
 function postByForm(payload) {
@@ -475,6 +510,10 @@ function postByForm(payload) {
 }
 
 function loadCloudState() {
+  return loadCloudJsonp("loadState");
+}
+
+function loadCloudJsonp(action) {
   return new Promise((resolve, reject) => {
     const callback = `frontierCloud_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const script = document.createElement("script");
@@ -495,9 +534,30 @@ function loadCloudState() {
       cleanup();
       reject(new Error("雲端讀取失敗"));
     };
-    script.src = `${CLOUD_ENDPOINT}?action=loadState&callback=${callback}&t=${Date.now()}`;
+    script.src = `${CLOUD_ENDPOINT}?action=${encodeURIComponent(action)}&callback=${callback}&t=${Date.now()}`;
     document.body.appendChild(script);
   });
+}
+
+async function compactCloudLogs() {
+  try {
+    setMaintenanceStatus("正在整理 Google Sheets 紀錄，會去除重複 id 並保留最新紀錄...");
+    await postByForm({ action: "compactLogs", reason: "manual maintenance", savedAt: new Date().toISOString() });
+    await wait(3500);
+    const stats = await loadCloudJsonp("stats");
+    if (!stats.ok || !stats.sheets) throw new Error(stats.error || "後端尚未更新到維護版 Code.gs");
+    setMaintenanceStatus(`整理完成：戰報 ${stats.sheets.battleLogRows}/${stats.limits.battleLogs}，操作 ${stats.sheets.actionLogRows}/${stats.limits.actionLogs}。`);
+    updateCloudStatus("雲端紀錄已整理，Google Sheets 不會無限制累積重複資料。", "ok");
+  } catch (error) {
+    setMaintenanceStatus(`整理失敗：${error.message}。若後端尚未重新部署 Code.gs，請先更新 Apps Script。`, "fail");
+  }
+}
+
+function setMaintenanceStatus(message, mode = "") {
+  const el = byId("maintenanceStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.className = `sync-status ${mode}`.trim();
 }
 
 async function loadFromCloud() {
@@ -505,13 +565,39 @@ async function loadFromCloud() {
     updateCloudStatus("正在載入雲端存檔...");
     const result = await loadCloudState();
     if (!result.ok || !result.state) throw new Error(result.error || "沒有雲端存檔");
-    state = normalize(result.state);
+    adoptCloudState(result);
     saveLocal();
     updateCloudStatus("已載入 Google Sheets 雲端存檔。", "ok");
     showNotice("已載入雲端存檔。", "success");
     render();
   } catch (error) {
     updateCloudStatus(`載入失敗：${error.message}`, "fail");
+  }
+}
+
+function adoptCloudState(result) {
+  state = normalize(result.state);
+  state.lastCloudSaved = result.savedAt || state.lastCloudSaved || new Date().toISOString();
+  markExistingLogsSynced();
+}
+
+async function bootCloudFirst() {
+  try {
+    updateCloudStatus("正在檢查 Google Sheets 雲端存檔...");
+    const result = await loadCloudState();
+    if (!result.ok || !result.state) throw new Error(result.error || "沒有雲端存檔");
+    const cloudSavedAt = String(result.savedAt || result.state.lastCloudSaved || "");
+    if (!state.lastCloudSaved || cloudSavedAt !== String(state.lastCloudSaved)) {
+      adoptCloudState(result);
+      saveLocal();
+      showNotice("已自動載入 Google Sheets 雲端存檔，手機與電腦會以這份資料為準。", "success");
+      updateCloudStatus(`已自動載入雲端存檔（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
+      render();
+      return;
+    }
+    updateCloudStatus(`Google Sheets 已連線，雲端存檔為最新（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
+  } catch (error) {
+    updateCloudStatus(`雲端讀取失敗，暫用本機備用存檔：${error.message}`, "fail");
   }
 }
 
@@ -669,7 +755,10 @@ function renderReports() {
 function renderSave() {
   byId("endpointInput").value = CLOUD_ENDPOINT;
   setText("localStatus", state.lastSaved ? `本機備用存檔：${new Date(state.lastSaved).toLocaleString("zh-TW")}` : "尚無本機存檔。");
-  if (!byId("cloudStatus").dataset.touched) updateCloudStatus(state.lastCloudSaved ? `已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。` : "Google Sheets 雲端存檔已設定完成。");
+  const cloudStatus = byId("cloudStatus");
+  if (cloudStatus && (!cloudStatus.textContent.trim() || cloudStatus.textContent === "檢查中...")) {
+    updateCloudStatus(state.lastCloudSaved ? `已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。` : "Google Sheets 雲端存檔已設定完成。");
+  }
 }
 
 function bindEvents() {
@@ -701,6 +790,8 @@ function bindEvents() {
   byId("attackBtn").addEventListener("click", attackTarget);
   byId("syncBtn").addEventListener("click", () => syncCloud("手動同步"));
   byId("loadCloudBtn").addEventListener("click", loadFromCloud);
+  const compactButton = byId("compactBtn");
+  if (compactButton) compactButton.addEventListener("click", compactCloudLogs);
   byId("localSaveBtn").addEventListener("click", () => {
     saveLocal();
     showNotice("已寫入本機備用存檔。", "success");
@@ -775,6 +866,7 @@ function wait(ms) {
 bindEvents();
 saveLocal();
 render();
+bootCloudFirst();
 setInterval(() => {
   tick();
   saveLocal();
