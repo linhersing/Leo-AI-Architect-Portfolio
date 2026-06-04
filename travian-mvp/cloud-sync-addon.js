@@ -7,7 +7,8 @@
   const SYNCED_ACTIONS_KEY = "frontier-village-synced-action-ids";
   const SYNCED_BATTLES_KEY = "frontier-village-synced-battle-ids";
   const DEBOUNCE_MS = 1600;
-  const VERIFY_DELAY_MS = 1800;
+  const VERIFY_DELAY_MS = 2200;
+  const REQUIRED_BACKEND = "cloud-v3-jsonp-form-2026-06-04";
   let timer = null;
   let busy = false;
   let lastRaw = "";
@@ -45,7 +46,7 @@
         }
         localStorage.setItem(ENDPOINT_KEY, url);
         localStorage.setItem(TOKEN_KEY, document.getElementById("tokenInput")?.value || "");
-        setTimeout(() => syncNow("儲存 endpoint 後立即同步"), 200);
+        setTimeout(() => diagnoseCloud(true), 200);
       }
 
       const syncButton = event.target.closest("#syncSheetBtn");
@@ -60,6 +61,13 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         loadCloudState();
+      }
+
+      const diagnoseButton = event.target.closest("#diagnoseCloudBtn");
+      if (diagnoseButton) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        diagnoseCloud(false);
       }
     }, true);
   }
@@ -77,6 +85,30 @@
     timer = setTimeout(() => syncNow(reason), DEBOUNCE_MS);
   }
 
+  async function diagnoseCloud(autoSyncAfterOk = false) {
+    const url = endpoint();
+    if (!url) return setCloudStatus("unset", "目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。");
+    if (isSheetUrl(url) || !validEndpoint(url)) return setCloudStatus("fail", "endpoint 欄位錯誤：請填 Apps Script Web App URL，不是 Google Sheet 網址。");
+    if (busy) return;
+
+    busy = true;
+    setCloudStatus("busy", "雲端診斷：正在檢查 Apps Script Web App...");
+    try {
+      const setup = await jsonp(url, { action: "setup", token: token() });
+      if (!setup.ok) throw new Error(setup.error || "Apps Script setup 回傳失敗");
+      if (setup.backendVersion !== REQUIRED_BACKEND) {
+        throw new Error("Apps Script 不是最新版本。請確認 Code.gs 已貼上 GitHub 最新版，並在部署管理中選「新版本」重新部署。現在讀到的版本：" + (setup.backendVersion || "舊版或未支援 JSONP"));
+      }
+      const sheetList = (setup.sheets || []).join(" / ");
+      setCloudStatus("ok", "雲端診斷通過：Web App 已連線，資料表已就緒（" + sheetList + "）。");
+      if (autoSyncAfterOk) setTimeout(() => syncNow("診斷通過後立即同步"), 250);
+    } catch (error) {
+      setCloudStatus("fail", "雲端診斷失敗 - " + explainError(error));
+    } finally {
+      busy = false;
+    }
+  }
+
   async function syncNow(reason = "自動同步") {
     const url = endpoint();
     if (!url) return setCloudStatus("unset", "目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。");
@@ -85,39 +117,46 @@
     if (!state) return setCloudStatus("fail", "本機沒有可同步的 state。請先進入遊戲產生存檔。");
     if (busy) return;
 
-    const raw = JSON.stringify(state);
-    const hash = hashText(raw);
-    const changed = localStorage.getItem(CLOUD_HASH_KEY) !== hash;
     const actionLogs = unsyncedLogs(state.actionLogs || [], SYNCED_ACTIONS_KEY);
     const battleLogs = unsyncedLogs(state.reports || [], SYNCED_BATTLES_KEY);
+    const beforeHash = hashText(JSON.stringify(state));
+    const changed = localStorage.getItem(CLOUD_HASH_KEY) !== beforeHash;
     if (!changed && !actionLogs.length && !battleLogs.length) return refreshStatus();
 
     busy = true;
-    setCloudStatus("busy", "雲端同步：送出中，正在等待 Google Sheets 寫入...");
     try {
       const sentAt = new Date().toISOString();
-      await fetch(url, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({
-          action: "saveState",
-          token: token(),
-          state,
-          reason,
-          savedAt: sentAt,
-          actionLogs,
-          battleLogs,
-        }),
-      });
+      const saveId = "save-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      state.cloudSaveId = saveId;
+      state.lastCloudAttempt = sentAt;
+      state.lastSaved = sentAt;
+      writeState(state);
 
-      setCloudStatus("busy", "雲端同步：已送出，正在讀回 Google Sheets 驗證...");
-      await delay(VERIFY_DELAY_MS);
-      const verified = await loadStateViaJsonp(url);
-      if (!verified.ok || !verified.state) throw new Error(verified.error || "讀回驗證失敗，請確認 Apps Script 已重新部署最新版本。");
+      const payload = {
+        action: "saveState",
+        token: token(),
+        state,
+        reason,
+        savedAt: sentAt,
+        actionLogs,
+        battleLogs,
+      };
+
+      setCloudStatus("busy", "雲端同步：方法 1 送出中...");
+      await sendViaFetch(url, payload);
+      let verified = await verifySave(url, saveId, "方法 1");
+
+      if (!verified.ok) {
+        setCloudStatus("busy", "方法 1 沒有讀回同一筆存檔，改用方法 2 表單備援...");
+        await sendViaHiddenForm(url, payload);
+        verified = await verifySave(url, saveId, "方法 2");
+      }
+
+      if (!verified.ok) throw new Error(verified.error || "送出後讀回不到同一筆 cloudSaveId，代表 Apps Script 沒有成功寫入 Google Sheets。");
 
       const savedAt = verified.savedAt || sentAt;
       state.lastCloudSaved = savedAt;
-      state.lastSaved = state.lastSaved || savedAt;
+      state.lastSaved = savedAt;
       writeState(state);
       localStorage.setItem(CLOUD_HASH_KEY, hashText(JSON.stringify(state)));
       localStorage.setItem(CLOUD_TIME_KEY, savedAt);
@@ -128,6 +167,55 @@
       setCloudStatus("fail", "雲端同步：失敗 - " + explainError(error));
     } finally {
       busy = false;
+    }
+  }
+
+  async function sendViaFetch(url, payload) {
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  function sendViaHiddenForm(url, payload) {
+    return new Promise((resolve) => {
+      const frameName = "cloudSyncFrame" + Date.now();
+      const iframe = document.createElement("iframe");
+      iframe.name = frameName;
+      iframe.hidden = true;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = url;
+      form.target = frameName;
+      form.style.display = "none";
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(iframe);
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(() => {
+        form.remove();
+        iframe.remove();
+        resolve();
+      }, 1400);
+    });
+  }
+
+  async function verifySave(url, expectedSaveId, label) {
+    await delay(VERIFY_DELAY_MS);
+    try {
+      const result = await loadStateViaJsonp(url);
+      if (!result.ok || !result.state) return { ok: false, error: label + "：Google Sheets 沒有可讀回的 state_json。" };
+      if (result.state.cloudSaveId !== expectedSaveId) {
+        return { ok: false, error: label + "：讀回的是舊存檔，不是這次送出的資料。" };
+      }
+      return { ok: true, savedAt: result.savedAt, state: result.state };
+    } catch (error) {
+      return { ok: false, error: label + "：" + explainError(error) };
     }
   }
 
@@ -163,6 +251,10 @@
       });
 
       let done = false;
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("讀回逾時。通常是 Web App 權限不是「所有人」，或 Apps Script 還不是最新部署版本。"));
+      }, 12000);
       const cleanup = () => {
         if (done) return;
         done = true;
@@ -170,10 +262,6 @@
         delete window[callbackName];
         script.remove();
       };
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error("讀回逾時，請確認 Apps Script 已部署成 Web App，且存取權限為所有人。"));
-      }, 12000);
 
       window[callbackName] = (data) => {
         cleanup();
@@ -181,7 +269,7 @@
       };
       script.onerror = () => {
         cleanup();
-        reject(new Error("JSONP 讀取失敗，請重新部署 Apps Script 最新版本。"));
+        reject(new Error("JSONP 讀取失敗。請確認 Web App 權限是「所有人」，不是只有自己或組織內。"));
       };
       script.src = target.toString();
       document.head.appendChild(script);
@@ -190,7 +278,7 @@
 
   function explainError(error) {
     const message = String(error?.message || error || "未知錯誤");
-    if (/Failed to fetch|NetworkError/i.test(message)) return "瀏覽器阻擋 Apps Script 回應。已改用 no-cors 寫入，請把 Code.gs 重新部署成最新 Web App 後再試一次。";
+    if (/Failed to fetch|NetworkError/i.test(message)) return "瀏覽器阻擋 Apps Script 回應。新版會自動改用表單備援；如果仍失敗，請按「診斷連線」看具體原因。";
     return message;
   }
 
@@ -208,14 +296,21 @@
   function readIdList(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; } }
 
   function ensureSaveUi() {
+    const endpointInput = document.getElementById("endpointInput");
     const cloudPanel = document.getElementById("cloudSyncStatus")?.closest("article");
     if (cloudPanel && !document.getElementById("cloudEndpointHelp")) {
-      document.getElementById("endpointInput")?.insertAdjacentHTML("afterend", `<small id="cloudEndpointHelp" class="cloud-help">請填 Apps Script Web App URL，例如 https://script.google.com/macros/s/.../exec。不要填 Google Sheet 網址。</small>`);
+      endpointInput?.insertAdjacentHTML("afterend", `<small id="cloudEndpointHelp" class="cloud-help">請填 Apps Script Web App URL，例如 https://script.google.com/macros/s/.../exec。不要填 Google Sheet 網址。若同步失敗，先按「診斷連線」。</small>`);
+    }
+    if (cloudPanel && !document.getElementById("diagnoseCloudBtn")) {
+      document.getElementById("syncSheetBtn")?.insertAdjacentHTML("afterend", `<button id="diagnoseCloudBtn" type="button">🧪 診斷連線</button>`);
     }
     const localPanel = document.getElementById("cloudStatusBadge")?.closest("article");
     if (localPanel && !document.getElementById("lastCloudSavedLine")) {
       document.getElementById("cloudStatusBadge")?.closest(".save-meter")?.insertAdjacentHTML("afterend", `<div class="save-meter"><span>最近一次雲端同步</span><strong id="lastCloudSavedLine">尚無</strong></div>`);
     }
+    if (endpointInput && endpoint() && !endpointInput.value) endpointInput.value = endpoint();
+    const tokenInput = document.getElementById("tokenInput");
+    if (tokenInput && token() && !tokenInput.value) tokenInput.value = token();
   }
 
   function refreshStatus() {
@@ -225,7 +320,7 @@
     setText("localSaveStatus", localState ? "成功" : "失敗");
     if (!url) setCloudStatus("unset", "目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。", false);
     else if (isSheetUrl(url) || !validEndpoint(url)) setCloudStatus("fail", "endpoint 欄位錯誤：請填 Apps Script Web App URL，不是 Google Sheet 網址。", false);
-    else if (!busy && !document.getElementById("cloudSyncStatus")?.dataset.cloudMode) setCloudStatus("idle", "Google Sheets endpoint：已設定。等待下一次同步。", false);
+    else if (!busy && !document.getElementById("cloudSyncStatus")?.dataset.cloudMode) setCloudStatus("idle", "Google Sheets endpoint：已設定。建議先按「診斷連線」，通過後再同步。", false);
     const last = localStorage.getItem(CLOUD_TIME_KEY) || localState?.lastCloudSaved || "";
     setText("lastCloudSavedLine", last ? new Date(last).toLocaleString("zh-TW") : "尚無");
   }
@@ -258,7 +353,7 @@
     if (document.getElementById("cloudSyncAddonStyles")) return;
     const style = document.createElement("style");
     style.id = "cloudSyncAddonStyles";
-    style.textContent = `.cloud-help{display:block;margin-top:5px;color:#7a5b20;font-size:.82rem}.sync-status.fail{color:#7a2b22;border-color:rgba(182,60,45,.35);background:#fff0eb}.sync-status.busy{color:#315272;border-color:rgba(69,111,158,.35);background:#edf6ff}.sync-status.ok{color:#2f6436;border-color:rgba(95,143,61,.35);background:#eef8df}`;
+    style.textContent = `.cloud-help{display:block;margin-top:5px;color:#7a5b20;font-size:.82rem}.sync-status.fail{color:#7a2b22;border-color:rgba(182,60,45,.35);background:#fff0eb}.sync-status.busy{color:#315272;border-color:rgba(69,111,158,.35);background:#edf6ff}.sync-status.ok{color:#2f6436;border-color:rgba(95,143,61,.35);background:#eef8df}#diagnoseCloudBtn{background:linear-gradient(#fff8de,#e5c36c)}@media(max-width:768px){#save .button-row{display:grid;grid-template-columns:1fr}#save .panel{padding:12px}.sync-status{font-size:.9rem;line-height:1.45}}`;
     document.head.appendChild(style);
   }
 
