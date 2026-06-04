@@ -1,22 +1,24 @@
 (() => {
   const STORAGE_KEY = "frontier-village-save-v4";
+  const BUILDING_KEY = "frontier-village-buildings-v1";
   const ENDPOINT_KEY = "frontier-village-sheet-endpoint";
   const TOKEN_KEY = "frontier-village-sheet-token";
   const CLOUD_TIME_KEY = "frontier-village-last-cloud-sync";
   const CLOUD_HASH_KEY = "frontier-village-last-cloud-hash";
   const SYNCED_ACTIONS_KEY = "frontier-village-synced-action-ids";
   const SYNCED_BATTLES_KEY = "frontier-village-synced-battle-ids";
+  const REQUIRED_BACKEND = "cloud-v3-jsonp-form-2026-06-04";
   const DEBOUNCE_MS = 1600;
   const VERIFY_DELAY_MS = 2200;
-  const REQUIRED_BACKEND = "cloud-v3-jsonp-form-2026-06-04";
-  let timer = null;
   let busy = false;
+  let timer = null;
   let lastRaw = "";
 
   function boot() {
     injectStyles();
     ensureSaveUi();
     bindControls();
+    bootGameFeel();
     refreshStatus();
     lastRaw = localStorage.getItem(STORAGE_KEY) || "";
     setInterval(watchState, 2500);
@@ -27,26 +29,23 @@
   function token() { return localStorage.getItem(TOKEN_KEY) || ""; }
   function validEndpoint(url = endpoint()) { return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url); }
   function isSheetUrl(url) { return /docs\.google\.com\/spreadsheets\//.test(url || ""); }
-  function readState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; } }
-  function writeState(state) { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+  function readJson(key, fallback = null) { try { return JSON.parse(localStorage.getItem(key) || "null") ?? fallback; } catch { return fallback; } }
+  function readState() { return readJson(STORAGE_KEY, null); }
+  function writeState(state) { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
   function bindControls() {
     document.addEventListener("click", (event) => {
       const saveEndpoint = event.target.closest("#saveEndpointBtn");
       if (saveEndpoint) {
-        const input = document.getElementById("endpointInput");
-        const url = (input?.value || "").trim();
-        if (!url) return setTimeout(refreshStatus, 0);
-        if (isSheetUrl(url) || !validEndpoint(url)) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          setCloudStatus("fail", "endpoint 欄位要填 Apps Script Web App URL，不是 Google Sheet 網址。格式應該像 https://script.google.com/macros/s/.../exec");
-          return;
-        }
+        const url = (document.getElementById("endpointInput")?.value || "").trim();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!url) return refreshStatus();
+        if (isSheetUrl(url) || !validEndpoint(url)) return setCloudStatus("fail", "endpoint 欄位要填 Apps Script Web App URL，不是 Google Sheet 網址。格式應該像 https://script.google.com/macros/s/.../exec");
         localStorage.setItem(ENDPOINT_KEY, url);
         localStorage.setItem(TOKEN_KEY, document.getElementById("tokenInput")?.value || "");
-        setTimeout(() => diagnoseCloud(true), 200);
+        diagnoseCloud(true);
       }
 
       const syncButton = event.target.closest("#syncSheetBtn");
@@ -97,10 +96,9 @@
       const setup = await jsonp(url, { action: "setup", token: token() });
       if (!setup.ok) throw new Error(setup.error || "Apps Script setup 回傳失敗");
       if (setup.backendVersion !== REQUIRED_BACKEND) {
-        throw new Error("Apps Script 不是最新版本。請確認 Code.gs 已貼上 GitHub 最新版，並在部署管理中選「新版本」重新部署。現在讀到的版本：" + (setup.backendVersion || "舊版或未支援 JSONP"));
+        throw new Error("Apps Script 不是最新版本。請把 GitHub 上 travian-mvp/apps-script/Code.gs 的內容貼到 Apps Script，再用「管理部署作業 > 編輯 > 新版本 > 部署」。現在讀到：" + (setup.backendVersion || "舊版或未支援 JSONP"));
       }
-      const sheetList = (setup.sheets || []).join(" / ");
-      setCloudStatus("ok", "雲端診斷通過：Web App 已連線，資料表已就緒（" + sheetList + "）。");
+      setCloudStatus("ok", "雲端診斷通過：Web App 已連線，player_state / battle_logs / action_logs 已就緒。");
       if (autoSyncAfterOk) setTimeout(() => syncNow("診斷通過後立即同步"), 250);
     } catch (error) {
       setCloudStatus("fail", "雲端診斷失敗 - " + explainError(error));
@@ -119,8 +117,7 @@
 
     const actionLogs = unsyncedLogs(state.actionLogs || [], SYNCED_ACTIONS_KEY);
     const battleLogs = unsyncedLogs(state.reports || [], SYNCED_BATTLES_KEY);
-    const beforeHash = hashText(JSON.stringify(state));
-    const changed = localStorage.getItem(CLOUD_HASH_KEY) !== beforeHash;
+    const changed = localStorage.getItem(CLOUD_HASH_KEY) !== hashText(JSON.stringify(state));
     if (!changed && !actionLogs.length && !battleLogs.length) return refreshStatus();
 
     busy = true;
@@ -132,16 +129,7 @@
       state.lastSaved = sentAt;
       writeState(state);
 
-      const payload = {
-        action: "saveState",
-        token: token(),
-        state,
-        reason,
-        savedAt: sentAt,
-        actionLogs,
-        battleLogs,
-      };
-
+      const payload = { action: "saveState", token: token(), state, reason, savedAt: sentAt, actionLogs, battleLogs };
       setCloudStatus("busy", "雲端同步：方法 1 送出中...");
       await sendViaFetch(url, payload);
       let verified = await verifySave(url, saveId, "方法 1");
@@ -153,7 +141,6 @@
       }
 
       if (!verified.ok) throw new Error(verified.error || "送出後讀回不到同一筆 cloudSaveId，代表 Apps Script 沒有成功寫入 Google Sheets。");
-
       const savedAt = verified.savedAt || sentAt;
       state.lastCloudSaved = savedAt;
       state.lastSaved = savedAt;
@@ -163,6 +150,7 @@
       markSynced(actionLogs, SYNCED_ACTIONS_KEY);
       markSynced(battleLogs, SYNCED_BATTLES_KEY);
       setCloudStatus("ok", "已同步到 Google Sheets。最近一次雲端同步時間：" + new Date(savedAt).toLocaleString("zh-TW"));
+      showToast("雲端存檔完成", "ok");
     } catch (error) {
       setCloudStatus("fail", "雲端同步：失敗 - " + explainError(error));
     } finally {
@@ -171,11 +159,7 @@
   }
 
   async function sendViaFetch(url, payload) {
-    await fetch(url, {
-      method: "POST",
-      mode: "no-cors",
-      body: JSON.stringify(payload),
-    });
+    await fetch(url, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
   }
 
   function sendViaHiddenForm(url, payload) {
@@ -197,11 +181,7 @@
       document.body.appendChild(iframe);
       document.body.appendChild(form);
       form.submit();
-      setTimeout(() => {
-        form.remove();
-        iframe.remove();
-        resolve();
-      }, 1400);
+      setTimeout(() => { form.remove(); iframe.remove(); resolve(); }, 1400);
     });
   }
 
@@ -210,9 +190,7 @@
     try {
       const result = await loadStateViaJsonp(url);
       if (!result.ok || !result.state) return { ok: false, error: label + "：Google Sheets 沒有可讀回的 state_json。" };
-      if (result.state.cloudSaveId !== expectedSaveId) {
-        return { ok: false, error: label + "：讀回的是舊存檔，不是這次送出的資料。" };
-      }
+      if (result.state.cloudSaveId !== expectedSaveId) return { ok: false, error: label + "：讀回的是舊存檔，不是這次送出的資料。" };
       return { ok: true, savedAt: result.savedAt, state: result.state };
     } catch (error) {
       return { ok: false, error: label + "：" + explainError(error) };
@@ -237,9 +215,7 @@
     }
   }
 
-  function loadStateViaJsonp(url) {
-    return jsonp(url, { action: "loadState", token: token() });
-  }
+  function loadStateViaJsonp(url) { return jsonp(url, { action: "loadState", token: token() }); }
 
   function jsonp(baseUrl, params = {}) {
     return new Promise((resolve, reject) => {
@@ -249,12 +225,7 @@
       Object.entries({ ...params, callback: callbackName, _: Date.now() }).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") target.searchParams.set(key, value);
       });
-
       let done = false;
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error("讀回逾時。通常是 Web App 權限不是「所有人」，或 Apps Script 還不是最新部署版本。"));
-      }, 12000);
       const cleanup = () => {
         if (done) return;
         done = true;
@@ -262,15 +233,12 @@
         delete window[callbackName];
         script.remove();
       };
-
-      window[callbackName] = (data) => {
+      const timeout = setTimeout(() => {
         cleanup();
-        resolve(data || {});
-      };
-      script.onerror = () => {
-        cleanup();
-        reject(new Error("JSONP 讀取失敗。請確認 Web App 權限是「所有人」，不是只有自己或組織內。"));
-      };
+        reject(new Error("讀回逾時。通常是 Web App 權限不是「所有人」，或 Apps Script 還不是最新部署版本。"));
+      }, 12000);
+      window[callbackName] = (data) => { cleanup(); resolve(data || {}); };
+      script.onerror = () => { cleanup(); reject(new Error("JSONP 讀取失敗。請確認 Web App 權限是「所有人」，不是只有自己或組織內。")); };
       script.src = target.toString();
       document.head.appendChild(script);
     });
@@ -286,13 +254,11 @@
     const synced = new Set(readIdList(key));
     return logs.filter((log) => log && log.id && !synced.has(log.id)).slice(0, 40);
   }
-
   function markSynced(logs, key) {
     const ids = new Set(readIdList(key));
     logs.forEach((log) => log?.id && ids.add(log.id));
     localStorage.setItem(key, JSON.stringify([...ids].slice(-300)));
   }
-
   function readIdList(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; } }
 
   function ensureSaveUi() {
@@ -339,13 +305,92 @@
     if (mark && mode === "ok") localStorage.setItem(CLOUD_TIME_KEY, new Date().toISOString());
   }
 
+  function bootGameFeel() {
+    if (window.__frontierGameFeel) return;
+    window.__frontierGameFeel = true;
+    let previous = snapshot();
+    document.addEventListener("click", (event) => {
+      const action = event.target.closest("[data-addon-upgrade],[data-upgrade-field],.upgrade-button,#attackBtn,.train-buttons button,#collectBtn,#simulateHourBtn");
+      if (!action) return;
+      action.classList.add("action-pressed");
+      setTimeout(() => action.classList.remove("action-pressed"), 520);
+    }, true);
+    setInterval(() => {
+      const next = snapshot();
+      compareSnapshots(previous, next);
+      previous = next;
+    }, 900);
+  }
+
+  function snapshot() {
+    const game = readState() || {};
+    const building = readJson(BUILDING_KEY, { levels: {} }) || { levels: {} };
+    const resources = game.village?.resources || {};
+    const troops = game.troops || {};
+    return {
+      resources: { wood: +resources.wood || 0, clay: +resources.clay || 0, iron: +resources.iron || 0, crop: +resources.crop || 0 },
+      troops: Object.values(troops).reduce((sum, value) => sum + Number(value || 0), 0),
+      reports: (game.reports || []).length,
+      levels: { ...(building.levels || {}) },
+    };
+  }
+
+  function compareSnapshots(prev, next) {
+    if (!prev) return;
+    for (const [id, level] of Object.entries(next.levels)) {
+      const oldLevel = Number(prev.levels[id] || 0);
+      if (oldLevel && Number(level) > oldLevel) {
+        showToast("升級完成：" + buildingName(id) + " Lv." + oldLevel + " → Lv." + level, "ok");
+        pulseDetail();
+      }
+    }
+    if (next.troops > prev.troops) showToast("訓練完成：士兵 +" + (next.troops - prev.troops), "ok");
+    if (next.reports > prev.reports) showToast("新戰報已產生，請到戰報頁查看。", "battle");
+    for (const key of Object.keys(next.resources)) {
+      const delta = Math.floor(next.resources[key] - prev.resources[key]);
+      if (Math.abs(delta) >= 1) pulseHud(key, delta);
+    }
+  }
+
+  function pulseHud(key, delta) {
+    const card = document.querySelector(`[data-hud="${key}"]`);
+    if (!card) return;
+    card.classList.remove("resource-gain", "resource-spend");
+    card.classList.add(delta > 0 ? "resource-gain" : "resource-spend");
+    card.dataset.delta = (delta > 0 ? "+" : "") + delta.toLocaleString("zh-TW");
+    setTimeout(() => card.classList.remove("resource-gain", "resource-spend"), 900);
+  }
+
+  function pulseDetail() {
+    const detail = document.getElementById("buildingDetail");
+    if (!detail) return;
+    detail.classList.add("level-up-flash");
+    setTimeout(() => detail.classList.remove("level-up-flash"), 1100);
+  }
+
+  function showToast(message, tone = "ok") {
+    let box = document.getElementById("gameFeelToast");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "gameFeelToast";
+      document.body.appendChild(box);
+    }
+    const item = document.createElement("div");
+    item.className = "feel-toast " + tone;
+    item.textContent = message;
+    box.appendChild(item);
+    setTimeout(() => item.classList.add("show"), 20);
+    setTimeout(() => { item.classList.remove("show"); setTimeout(() => item.remove(), 260); }, 2600);
+  }
+
+  function buildingName(id) {
+    return ({ main: "主樓", warehouse: "倉庫", barracks: "兵營", rally: "集結點", granary: "穀倉", marketplace: "市集", wall: "城門" })[id] || id;
+  }
+
   function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
   function hashText(text) {
     let hash = 2166136261;
-    for (let i = 0; i < text.length; i += 1) {
-      hash ^= text.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
+    for (let i = 0; i < text.length; i += 1) { hash ^= text.charCodeAt(i); hash = Math.imul(hash, 16777619); }
     return String(hash >>> 0);
   }
 
@@ -353,7 +398,7 @@
     if (document.getElementById("cloudSyncAddonStyles")) return;
     const style = document.createElement("style");
     style.id = "cloudSyncAddonStyles";
-    style.textContent = `.cloud-help{display:block;margin-top:5px;color:#7a5b20;font-size:.82rem}.sync-status.fail{color:#7a2b22;border-color:rgba(182,60,45,.35);background:#fff0eb}.sync-status.busy{color:#315272;border-color:rgba(69,111,158,.35);background:#edf6ff}.sync-status.ok{color:#2f6436;border-color:rgba(95,143,61,.35);background:#eef8df}#diagnoseCloudBtn{background:linear-gradient(#fff8de,#e5c36c)}@media(max-width:768px){#save .button-row{display:grid;grid-template-columns:1fr}#save .panel{padding:12px}.sync-status{font-size:.9rem;line-height:1.45}}`;
+    style.textContent = `.cloud-help{display:block;margin-top:5px;color:#7a5b20;font-size:.82rem}.sync-status.fail{color:#7a2b22;border-color:rgba(182,60,45,.35);background:#fff0eb}.sync-status.busy{color:#315272;border-color:rgba(69,111,158,.35);background:#edf6ff}.sync-status.ok{color:#2f6436;border-color:rgba(95,143,61,.35);background:#eef8df}#diagnoseCloudBtn{background:linear-gradient(#fff8de,#e5c36c)}.action-pressed{transform:scale(.97)!important;box-shadow:0 0 0 4px rgba(255,214,94,.45),inset 0 2px 8px rgba(80,55,12,.22)!important}.level-up-flash{animation:levelFlash 1.05s ease}.hud-item.resource-gain,.hud-item.resource-spend{position:relative;animation:hudPop .8s ease}.hud-item.resource-gain{outline:3px solid rgba(95,143,61,.42)}.hud-item.resource-spend{outline:3px solid rgba(182,60,45,.36)}.hud-item.resource-gain:after,.hud-item.resource-spend:after{content:attr(data-delta);position:absolute;right:8px;top:-11px;border-radius:999px;padding:3px 7px;color:#fff;font-size:.78rem;font-weight:900}.hud-item.resource-gain:after{background:#2f6436}.hud-item.resource-spend:after{background:#b63c2d}#gameFeelToast{position:fixed;top:14px;right:14px;z-index:120;display:grid;gap:8px;max-width:min(360px,calc(100vw - 28px));pointer-events:none}.feel-toast{transform:translateY(-8px);opacity:0;border:1px solid rgba(82,67,40,.24);border-radius:8px;padding:11px 13px;color:#243019;background:#fff8df;box-shadow:0 12px 28px rgba(38,43,31,.2);font-weight:900;transition:.22s ease}.feel-toast.show{transform:translateY(0);opacity:1}.feel-toast.ok{border-left:5px solid #5f8f3d}.feel-toast.battle{border-left:5px solid #b63c2d}@keyframes levelFlash{0%{box-shadow:0 0 0 rgba(244,207,82,0)}35%{box-shadow:0 0 0 6px rgba(244,207,82,.38);background:#fff8d5}100%{box-shadow:0 0 0 rgba(244,207,82,0)}}@keyframes hudPop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}@media(max-width:768px){#save .button-row{display:grid;grid-template-columns:1fr}#save .panel{padding:12px}.sync-status{font-size:.9rem;line-height:1.45}#gameFeelToast{top:8px;left:8px;right:8px;max-width:none}.feel-toast{font-size:.92rem}}`;
     document.head.appendChild(style);
   }
 
