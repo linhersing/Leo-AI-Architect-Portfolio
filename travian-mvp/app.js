@@ -1,1 +1,783 @@
-const DB='https://docs.google.com/spreadsheets/d/1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2ZXc/edit?usp=drivesdk',SK='frontier-village-save-v4',OLD=['frontier-village-save-v3','frontier-village-save-v2','frontier-village-save'],EK='frontier-village-sheet-endpoint',TK='frontier-village-sheet-token',CPK='frontier-village-cloud-load-prompted-v1',LIM=9000,R={wood:{l:'木材',i:'🪵'},clay:{l:'泥土',i:'🧱'},iron:{l:'鐵礦',i:'⛓️'},crop:{l:'穀物',i:'🌾'}},U={clubman:{l:'棍棒兵',i:'⚔️',a:40,d:20,u:1,c:{wood:95,clay:75,iron:40,crop:40}},spearman:{l:'矛兵',i:'🛡️',a:10,d:35,u:1,c:{wood:80,clay:100,iron:80,crop:40}},scout:{l:'斥候',i:'👁️',a:0,d:10,u:1,c:{wood:60,clay:40,iron:90,crop:50}}},FD=[['wood','伐木場'],['wood','伐木場'],['wood','伐木場'],['wood','伐木場'],['clay','泥坑'],['clay','泥坑'],['clay','泥坑'],['clay','泥坑'],['iron','鐵礦'],['iron','鐵礦'],['iron','鐵礦'],['iron','鐵礦'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田'],['crop','農田']],Q=[['upgrade','點擊一塊資源田並升級','下一步：到兵營訓練棍棒兵。'],['train','到兵營訓練棍棒兵','下一步：請點擊下方 🗺️ 地圖，選擇一個綠洲。'],['map','前往地圖','下一步：點擊 🌳 綠洲或 🐾 野獸營地。'],['select','點擊一個綠洲','下一步：輸入兵力後按下 ⚔️ 攻擊目標。'],['attack','派兵攻擊','下一步：點擊「查看戰報」。'],['report','查看戰報','下一步：到 💾 存檔頁設定 endpoint，完成第一次雲端存檔。'],['cloudSave','完成第一次雲端存檔','新手教學完成。可以繼續升級、訓練、清除更多目標。']];let sel=null,prev={},syncTimer=null,pending={a:[],b:[],r:'自動同步'},cloud={m:ep()?'idle':'unset',msg:ep()?'雲端同步：已設定 endpoint，等待同步。':'目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。'},s=load();function ep(){return localStorage.getItem(EK)||''}function fresh(){return{version:4,turn:1,lastTick:Date.now(),lastSaved:null,lastCloudSaved:null,progress:{upgrade:false,train:false,map:false,select:false,attack:false,report:false,cloudSave:false},village:{id:'v1',name:'黎明河谷',x:0,y:0,warehouseLimit:LIM,resources:{wood:760,clay:760,iron:760,crop:760},fields:FD.map((d,i)=>({id:d[0]+'_'+i,type:d[0],name:d[1],level:1}))},troops:{clubman:12,spearman:4,scout:2},map:mkMap(),reports:[],actionLogs:[],lastBattle:null}}function mkMap(){let a=[];for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++)a.push({id:x+'_'+y,x,y,type:x===0&&y===0?'village':'wild',name:x===0&&y===0?'你的村莊':'荒地',cleared:false});[{id:'-1_1',type:'oasis',name:'森林綠洲',bonus:'木材 +25%',animals:18,resources:{wood:120,clay:45,iron:35,crop:55}},{id:'2_-1',type:'oasis',name:'泥土綠洲',bonus:'泥土 +25%',animals:10,resources:{wood:50,clay:135,iron:40,crop:60}},{id:'1_2',type:'oasis',name:'穀物綠洲',bonus:'穀物 +25%',animals:26,resources:{wood:40,clay:60,iron:45,crop:160}},{id:'-2_-2',type:'oasis',name:'鐵礦綠洲',bonus:'鐵礦 +25%',animals:14,resources:{wood:70,clay:45,iron:140,crop:40}},{id:'3_2',type:'camp',name:'野獸營地',bonus:'小型獸群',animals:8,resources:{wood:45,clay:40,iron:25,crop:35}},{id:'-3_0',type:'camp',name:'狼穴',bonus:'小型獸群',animals:12,resources:{wood:35,clay:55,iron:40,crop:25}}].forEach(o=>Object.assign(a.find(t=>t.id===o.id),o));return a}function load(){for(const k of[SK,...OLD])try{let raw=localStorage.getItem(k);if(raw)return norm(JSON.parse(raw))}catch{localStorage.removeItem(k)}return fresh()}function norm(o){let b=fresh();return{...b,...o,version:4,progress:{...b.progress,...(o.progress||{})},village:{...b.village,...(o.village||{}),warehouseLimit:Number(o.village?.warehouseLimit||LIM),resources:{...b.village.resources,...(o.village?.resources||{})},fields:Array.isArray(o.village?.fields)&&o.village.fields.length?o.village.fields:b.village.fields},troops:{...b.troops,...(o.troops||{})},reports:Array.isArray(o.reports)?o.reports:[],actionLogs:Array.isArray(o.actionLogs)?o.actionLogs:[],map:mig(o.map,b.map)}}function mig(m,b){if(!Array.isArray(m)||m.length!==49)return b;return b.map(x=>{let y=m.find(t=>t.id===x.id);if(!y)return x;if(x.type==='oasis'||x.type==='camp')return{...x,cleared:!!y.cleared,animals:y.cleared?0:Number(y.animals??x.animals)};return x})}function cap(){return Number(s.village.warehouseLimit||LIM)}function prod(f){return 16+f.level*12}function upkeep(){return Object.entries(s.troops).reduce((n,[u,c])=>n+c*U[u].u,0)}function total(){return Object.values(s.troops).reduce((n,c)=>n+c,0)}function pop(){return 26+s.village.fields.reduce((n,f)=>n+f.level,0)+Math.floor(total()/4)}function rates(){let r={wood:0,clay:0,iron:0,crop:0};s.village.fields.forEach(f=>r[f.type]+=prod(f));r.crop=Math.max(0,r.crop-upkeep());return r}function tick(){let now=Date.now(),h=Math.max(0,(now-s.lastTick)/36e5);if(h<.0003)return false;addH(h);s.lastTick=now;return true}function addH(h){let r=rates(),c=cap();Object.keys(r).forEach(k=>s.village.resources[k]=Math.min(c,s.village.resources[k]+r[k]*h))}function fcost(f){let l=f.level;return{wood:80+l*42,clay:70+l*36,iron:55+l*31,crop:35+l*24}}function can(c){return Object.entries(c).every(([k,v])=>s.village.resources[k]>=v)}function pay(c){if(!can(c)){notice('資源不足。可以先按「收成 / 更新資源」，或用「模擬 1 小時」測試節奏。','warn');return false}Object.entries(c).forEach(([k,v])=>s.village.resources[k]-=v);return true}function mult(c,n){let r={};Object.entries(c).forEach(([k,v])=>r[k]=v*n);return r}function qdone(id){if(s.progress[id])return false;s.progress[id]=true;return true}function aid(p){return p+'_'+Date.now()+'_'+Math.random().toString(16).slice(2)}function alog(type,msg,d={}){return{id:aid('action'),time:new Date().toLocaleString('zh-TW'),isoTime:new Date().toISOString(),turn:s.turn,type,message:msg,details:d}}function commit(msg,tone='success',o={}){s.lastSaved=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(s));notice(msg,tone);render();if(o.cloud)queueCloud(msg,o);else saveInfo()}function localSave(msg=''){tick();s.lastSaved=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(s));if(msg)notice(msg,'success');saveInfo();hud()}function upgrade(id){tick();let f=s.village.fields.find(x=>x.id===id);if(!f)return;let c=fcost(f);if(!pay(c)){render();return}f.level++;s.turn++;qdone('upgrade');let log=alog('upgrade',f.name+' 升級到等級 '+f.level,{fieldId:id,fieldType:f.type,level:f.level,cost:c});s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit(f.name+' 升級成功，現在是等級 '+f.level+'。','success',{actionLog:log,cloud:true})}function train(u,n){tick();let c=mult(U[u].c,n);if(!pay(c)){render();return}s.troops[u]+=n;s.turn++;if(u==='clubman')qdone('train');let log=alog('train','訓練完成，'+U[u].l+' +'+n,{unit:u,amount:n,cost:c});s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit('訓練完成，'+U[u].l+' +'+n+'。','success',{actionLog:log,cloud:true})}function collect(){let ch=tick(),log=alog('collect','收成 / 更新資源',{changed:ch});s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit(ch?'資源已更新，產量正在累積。':'資源已是最新狀態，下一次更新很快就會出現。','success',{actionLog:log,cloud:false})}function simHour(){addH(1);s.lastTick=Date.now();s.turn++;let log=alog('simulate_hour','模擬 1 小時資源產出',{rates:rates()});s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit('已模擬 1 小時，資源已依產量增加。','success',{actionLog:log,cloud:false})}function attack(){tick();let t=s.map.find(x=>x.id===sel);if(!t||!atkable(t)){notice('請先在地圖上點擊一個尚未清除的綠洲或野獸營地。','warn');battle(null);return}let sent={clubman:num('sendClub'),spearman:num('sendSpear')};if(sent.clubman+sent.spearman<=0){notice('至少要派出一名士兵。','warn');return}if(sent.clubman>s.troops.clubman||sent.spearman>s.troops.spearman){notice('派出的士兵超過目前兵力，請減少數量。','warn');return}let ap=sent.clubman*U.clubman.a+sent.spearman*U.spearman.a,dp=t.animals*23+Math.round(Math.random()*60),win=ap>=dp,lr=win?Math.min(.42,dp/Math.max(1,ap)*.36):Math.min(.9,dp/Math.max(1,ap)*.58),losses={clubman:Math.min(sent.clubman,Math.ceil(sent.clubman*lr)),spearman:Math.min(sent.spearman,Math.ceil(sent.spearman*lr))};s.troops.clubman-=losses.clubman;s.troops.spearman-=losses.spearman;let loot=win?{...t.resources}:{wood:0,clay:0,iron:0,crop:0};if(win){Object.keys(loot).forEach(k=>s.village.resources[k]=Math.min(cap(),s.village.resources[k]+loot[k]));t.cleared=true;t.animals=0}else t.animals=Math.max(1,t.animals-Math.ceil((sent.clubman+sent.spearman)/4));let bl={id:aid('battle'),time:new Date().toLocaleString('zh-TW'),isoTime:new Date().toISOString(),target:t.name,coordinate:'('+t.x+', '+t.y+')',result:win?'勝利':'失敗',sent,losses,loot,cleared:win},log=alog('attack','攻擊'+bl.target+'：'+bl.result,{target:bl.target,sent,losses,loot});s.lastBattle=bl;s.reports.unshift(bl);s.reports=s.reports.slice(0,30);s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);s.turn++;qdone('attack');commit(win?'攻擊勝利：'+t.name+' 已清除。':'攻擊失敗：'+t.name+' 還有野獸。',win?'success':'warn',{actionLog:log,battleLog:bl,cloud:true})}function num(id){return Math.max(0,Math.floor(Number(document.getElementById(id).value)||0))}function atkable(t){return(t.type==='oasis'||t.type==='camp')&&!t.cleared}function render(){tick();hud();fields();training();troops();mapR();target();battle(s.lastBattle);reports();quests();saveInfo()}function hud(){let res=s.village.resources,ra=rates(),c=cap();['wood','clay','iron','crop'].forEach(k=>{text(k,Math.floor(res[k]).toLocaleString('zh-TW'));text(k+'Rate','+'+ra[k]+'/h');text(k+'Cap','上限 '+c.toLocaleString('zh-TW'));text(k+'Full','滿倉 '+full(res[k],ra[k],c));pulse(k,Math.floor(res[k]))});text('population',String(pop()));text('soldiers',String(total()));text('cropUse','耗糧 '+upkeep()+'/h');text('turn',String(s.turn));text('villageTroopCount',String(total()));pulse('population',pop());pulse('soldiers',total());pulse('turn',s.turn);let wins=s.reports.filter(r=>r.result==='勝利').length;text('winRate',s.reports.length?Math.round(wins/s.reports.length*100)+'%':'0%')}function pulse(k,v){let e=document.querySelector('[data-hud='+k+']');if(!e||prev[k]===undefined||prev[k]===v){prev[k]=v;return}prev[k]=v;e.classList.remove('pulse');void e.offsetWidth;e.classList.add('pulse')}function fields(){gid('fieldGrid').innerHTML=s.village.fields.map(f=>{let c=fcost(f),ok=can(c),np=prod({...f,level:f.level+1});return `<article class='field-card field-${f.type} ${ok?'affordable':'locked'}'><div class='field-title'><span class='field-icon'>${R[f.type].i}</span><span class='field-prompt'>點擊升級</span></div><strong>${f.name}</strong><span class='field-meta'>等級 ${f.level}</span><span class='field-meta'>每小時產量 +${prod(f)}/h</span><span class='field-meta'>升級後 +${np}/h</span><span class='field-cost'>升級成本：${fmt(c)}</span><button class='upgrade-button' data-upgrade-field='${f.id}' ${ok?'':'disabled'}>${ok?'升級':'資源不足'}</button></article>`}).join('')}function training(){let html=Object.entries(U).filter(([u])=>u!=='scout').map(([u,st])=>{let am=u==='clubman'?[1,3]:[1,2];return `<article class='training-card'><div class='training-head'><div class='training-title'><span class='training-icon'>${st.i}</span><div><strong>${st.l}</strong><div class='hint'>目前 ${s.troops[u]} 名</div></div></div></div><div class='training-stats'><div><small>成本</small><strong>${fmt(st.c)}</strong></div><div><small>攻擊</small><strong>${st.a}</strong></div><div><small>防禦</small><strong>${st.d}</strong></div><div><small>耗糧</small><strong>${st.u}/h</strong></div></div><div class='train-buttons'>${am.map(n=>{let c=mult(st.c,n),ok=can(c);return `<button data-train-unit='${u}' data-train-amount='${n}' ${ok?'':'disabled'}>${ok?'訓練'+st.l+' x'+n:'資源不足 x'+n}</button>`}).join('')}</div></article>`}).join('');gid('trainingGridVillage').innerHTML=html;gid('trainingGridMilitary').innerHTML=html}function troops(){gid('troopSummary').innerHTML=Object.entries(U).map(([u,st])=>`<article class='troop-card'><span class='troop-icon'>${st.i}</span><div><strong>${st.l} x${s.troops[u]}</strong><p>攻擊 ${st.a} / 防禦 ${st.d} / 耗糧 ${st.u}</p></div><span>${u==='clubman'?'主攻':u==='spearman'?'防守':'偵察'}</span></article>`).join('')}function mapR(){gid('mapGrid').innerHTML=s.map.map(t=>`<button class='map-tile map-${t.type}${t.id===sel?' selected':''}${t.cleared?' map-cleared':''}' data-tile='${t.id}' aria-label='${t.name} ${t.x},${t.y}'><span class='tile-badge'>${micon(t)}</span><strong>${t.name}</strong><span class='tile-detail'>${mdetail(t)}</span></button>`).join('')}function target(){let c=gid('targetCard'),t=s.map.find(x=>x.id===sel),ok=t&&atkable(t);gid('stepSelect').classList.toggle('done',!!ok);gid('stepAttack').classList.toggle('done',!!s.lastBattle);if(!t){c.textContent='請先點擊地圖上的綠洲或野獸營地。';return}if(t.type==='village'){c.innerHTML=`<div class='target-title'><span>🏠 你的村莊</span><span>(0, 0)</span></div><p>這是你的出發點，不能攻擊自己。</p>`;return}if(t.type==='wild'){c.innerHTML=`<div class='target-title'><span>🌾 荒地</span><span>(${t.x}, ${t.y})</span></div><p>荒地目前沒有敵人，也沒有戰利品。</p>`;return}let sug=sugg(t);c.innerHTML=`<div class='target-title'><span>${micon(t)} ${t.name}</span><span>(${t.x}, ${t.y})</span></div><dl><div><dt>野獸數量</dt><dd>${t.animals}</dd></div><div><dt>狀態</dt><dd>${t.cleared?'已清除':'可攻擊'}</dd></div><div><dt>可能戰利品</dt><dd>${fmt(t.resources)}</dd></div><div><dt>建議派兵</dt><dd>${sug} 棍棒兵以上</dd></div></dl>`;if(!t.cleared)gid('sendClub').value=Math.min(s.troops.clubman,Math.max(1,sug))}function battle(r){let b=gid('battleResult');if(!r){b.className='battle-result muted-result';b.textContent='尚未交戰。';return}b.className='battle-result '+(r.result==='勝利'?'win':'loss');b.innerHTML=`<strong>${r.result}：${r.target} ${r.coordinate}</strong><span>派出兵力：棍棒兵 ${r.sent.clubman}、矛兵 ${r.sent.spearman}</span><span>損失兵力：棍棒兵 ${r.losses.clubman}、矛兵 ${r.losses.spearman}</span><span>獲得資源：${fmt(r.loot)}</span><span>${r.cleared?'目標已清除。':'目標尚未清除。'}</span><div class='result-actions'><button id='viewReportsBtn' class='primary'>📜 查看戰報</button></div>`}function reports(){let l=gid('reportList');if(!s.reports.length){l.innerHTML='<li>尚無戰報。完成第一次攻擊後，結果會出現在這裡。</li>';return}l.innerHTML=s.reports.map(r=>`<li><strong>${r.result}</strong> ${r.target} ${r.coordinate} <span class='report-time'>${r.time}</span><br>派出：棍棒兵 ${r.sent.clubman}、矛兵 ${r.sent.spearman}；損失：棍棒兵 ${r.losses.clubman}、矛兵 ${r.losses.spearman}<br>戰利品：${fmt(r.loot)}；${r.cleared?'已清除':'未清除'}</li>`).join('')}function quests(){gid('questList').innerHTML=Q.map((q,i)=>`<li class='${s.progress[q[0]]?'done':''}'>${s.progress[q[0]]?'✓ ':i+1+'. '}${q[1]}</li>`).join('');let n=Q.find(q=>!s.progress[q[0]])||Q[Q.length-1];gid('nextStep').textContent=n[0]==='cloudSave'&&!ep()?'下一步：目前只有本機存檔。到 💾 存檔頁貼上 Apps Script endpoint 才能啟用雲端同步。':n[2]}function saveInfo(){let sv=s.lastSaved?rel(s.lastSaved):'尚無';text('lastSaved',s.lastSaved?new Date(s.lastSaved).toLocaleString('zh-TW'):'尚無');text('lastSavedMini',sv);text('localSaveStatus',s.lastSaved?'本機自動存檔：'+sv:'尚無');text('cloudStatusBadge',cloud.m==='unset'?'未設定':cloud.m==='busy'?'同步中':cloud.m==='fail'?'同步失敗':'已連線');let c=gid('cloudSyncStatus');c.className='sync-status '+(cloud.m==='ok'||cloud.m==='idle'?'ok':cloud.m==='busy'?'busy':cloud.m==='fail'?'fail':'');c.textContent=cloud.msg;text('saveStatus',cloud.msg)}function mdetail(t){if(t.type==='village')return'(0, 0) 你的村莊';if(t.type==='wild')return`(${t.x}, ${t.y}) 荒地`;if(t.cleared)return`(${t.x}, ${t.y}) 已清除`;return`(${t.x}, ${t.y}) 野獸 ${t.animals}`}function micon(t){return t.type==='village'?'🏠':t.type==='oasis'?(t.cleared?'✅':'🌳'):t.type==='camp'?(t.cleared?'✅':'🐾'):'🌾'}function sugg(t){return Math.max(1,Math.ceil((t.animals*23+45)/U.clubman.a))}function fmt(c){return['wood','clay','iron','crop'].map(k=>R[k].i+Math.floor(c[k]||0)).join(' ')}function full(cur,rate,c){if(cur>=c)return'已滿';if(rate<=0)return'不會滿';let h=(c-cur)/rate;if(h<1)return Math.ceil(h*60)+' 分';if(h<24)return h.toFixed(1)+' 小時';return(h/24).toFixed(1)+' 天'}function rel(iso){let sec=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/1000));if(sec<8)return'剛剛';if(sec<60)return sec+' 秒前';let m=Math.floor(sec/60);return m<60?m+' 分前':new Date(iso).toLocaleString('zh-TW')}function gid(id){return document.getElementById(id)}function text(id,v){let e=gid(id);if(e)e.textContent=v}function notice(m,t=''){let n=gid('notice');n.className=('notice '+t).trim();n.textContent=m}function cloudSet(m,msg){cloud={m,msg};saveInfo()}function queueCloud(reason,o={}){if(!ep()){cloudSet('unset','目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。');return}if(o.actionLog)pending.a.push(o.actionLog);if(o.battleLog)pending.b.push(o.battleLog);pending.r=reason||'自動同步';clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncSheet(pending.r),1400)}async function syncSheet(reason='手動同步'){if(!ep()){cloudSet('unset','目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。');notice('尚未設定 Apps Script endpoint；目前只會本機存檔。','warn');return}let batch=pending;pending={a:[],b:[],r:'自動同步'};cloudSet('busy','雲端同步：同步中...');try{let res=await fetch(ep(),{method:'POST',mode:'cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveState',token:localStorage.getItem(TK)||'',state:s,reason,savedAt:new Date().toISOString(),actionLogs:batch.a,battleLogs:batch.b})});if(!res.ok)throw Error('HTTP '+res.status);let j=await res.json();if(!j.ok)throw Error(j.error||'Apps Script 回傳失敗');s.lastCloudSaved=j.savedAt||new Date().toISOString();qdone('cloudSave');s.lastSaved=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(s));cloudSet('ok','雲端同步：同步成功（'+rel(s.lastCloudSaved)+'）。');quests()}catch(e){pending.a.unshift(...batch.a);pending.b.unshift(...batch.b);cloudSet('fail','雲端同步：同步失敗：'+e.message)}}async function loadCloud(){if(!ep()){cloudSet('unset','目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。');notice('尚未設定 Apps Script endpoint，無法載入雲端存檔。','warn');return}cloudSet('busy','雲端同步：正在讀取雲端存檔...');try{let res=await fetch(ep(),{method:'POST',mode:'cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'loadState',token:localStorage.getItem(TK)||''})});if(!res.ok)throw Error('HTTP '+res.status);let j=await res.json();if(!j.ok||!j.state)throw Error(j.error||'雲端沒有可載入的存檔');s=norm(j.state);sel=null;prev={};s.lastSaved=new Date().toISOString();localStorage.setItem(SK,JSON.stringify(s));cloudSet('ok','雲端同步：已載入雲端存檔。');notice('已載入 Google Sheets 雲端存檔。','success');render()}catch(e){cloudSet('fail','雲端同步：讀取失敗，已保留本機存檔。'+e.message);notice('雲端讀取失敗，已退回本機存檔。','warn')}}function exportJson(){let blob=new Blob([JSON.stringify(s,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='frontier-village-save.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);let log=alog('export','匯出 JSON 存檔');s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit('JSON 存檔已匯出。','success',{actionLog:log,cloud:false})}function sw(v){document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active-view',x.id===v));if(v==='map'&&qdone('map'))localSave();if(v==='reports'&&qdone('report'))localSave();quests()}function bind(){document.querySelectorAll('.nav').forEach(n=>n.addEventListener('click',()=>sw(n.dataset.view)));gid('fieldGrid').addEventListener('click',e=>{let b=e.target.closest('[data-upgrade-field]');if(b&&!b.disabled)upgrade(b.dataset.upgradeField)});document.querySelectorAll('#trainingGridVillage,#trainingGridMilitary').forEach(c=>c.addEventListener('click',e=>{let b=e.target.closest('[data-train-unit]');if(b&&!b.disabled)train(b.dataset.trainUnit,Number(b.dataset.trainAmount))}));gid('mapGrid').addEventListener('click',e=>{let b=e.target.closest('[data-tile]');if(!b)return;sel=b.dataset.tile;let t=s.map.find(x=>x.id===sel);if(t&&atkable(t))qdone('select');notice(t?'已選取：'+t.name+' ('+t.x+', '+t.y+')。':'已選取地圖方格。');localSave();render()});gid('battleResult').addEventListener('click',e=>{if(e.target.closest('#viewReportsBtn'))sw('reports')});gid('attackBtn').addEventListener('click',attack);gid('collectBtn').addEventListener('click',collect);gid('simulateHourBtn').addEventListener('click',simHour);gid('saveLocalBtn').addEventListener('click',()=>{let log=alog('local_save','手動本機存檔');s.actionLogs.unshift(log);s.actionLogs=s.actionLogs.slice(0,60);commit('已立即寫入本機存檔。','success',{actionLog:log,cloud:false})});gid('syncSheetBtn').addEventListener('click',()=>syncSheet('手動同步'));gid('loadCloudBtn').addEventListener('click',loadCloud);gid('exportBtn').addEventListener('click',exportJson);gid('resetBtn').addEventListener('click',()=>{if(!confirm('確定要重置遊戲？'))return;s=fresh();sel=null;prev={};let log=alog('reset','重置遊戲');s.actionLogs.unshift(log);commit('已重置新遊戲。','success',{actionLog:log,cloud:false})});gid('saveEndpointBtn').addEventListener('click',()=>{localStorage.setItem(EK,gid('endpointInput').value.trim());localStorage.setItem(TK,gid('tokenInput').value.trim());cloudSet(ep()?'idle':'unset',ep()?'雲端同步：已設定 endpoint，將在升級、訓練、攻擊後自動同步。':'目前只有本機存檔，尚未啟用 Google Sheets 雲端同步。');notice('同步設定已儲存。','success')})}function promptLoad(){if(!ep()||sessionStorage.getItem(CPK))return;sessionStorage.setItem(CPK,'1');setTimeout(()=>{if(confirm('偵測到已設定 Google Sheets endpoint。是否載入雲端存檔？'))loadCloud()},600)}bind();gid('endpointInput').value=localStorage.getItem(EK)||'';gid('tokenInput').value=localStorage.getItem(TK)||'';render();promptLoad();setInterval(()=>{tick();hud();fields();training();saveInfo()},5000);setInterval(()=>localSave(),30000);setInterval(()=>queueCloud('每 60 秒自動同步'),60000);
+const CLOUD_ENDPOINT = "https://script.google.com/macros/s/AKfycbz2ttAxilWIULbA_GNeuGk1Ltjo6iycM4w8v_RUasolmwyu62cX1S5T_sRUwX1kaa1VSw/exec";
+const STORAGE_KEY = "frontier-village-stable-save";
+const OLD_KEYS = ["frontier-village-save-v4", "frontier-village-save-v3", "frontier-village-save-v2", "frontier-village-save"];
+const ENDPOINT_KEY = "frontier-village-sheet-endpoint";
+const WAREHOUSE_LIMIT = 9000;
+
+const RES = {
+  wood: { name: "木材", icon: "🪵" },
+  clay: { name: "泥土", icon: "🧱" },
+  iron: { name: "鐵礦", icon: "⛓️" },
+  crop: { name: "穀物", icon: "🌾" },
+};
+
+const UNITS = {
+  clubman: { name: "棍棒兵", icon: "⚔️", attack: 40, defense: 18, upkeep: 1, cost: { wood: 95, clay: 75, iron: 40, crop: 40 } },
+  spearman: { name: "矛兵", icon: "🛡️", attack: 12, defense: 38, upkeep: 1, cost: { wood: 80, clay: 100, iron: 80, crop: 40 } },
+  scout: { name: "斥候", icon: "👁️", attack: 0, defense: 10, upkeep: 1, cost: { wood: 60, clay: 40, iron: 90, crop: 50 } },
+};
+
+const BUILDINGS = {
+  main: { name: "主樓", icon: "🏛️", role: "村莊核心", cost: { wood: 160, clay: 130, iron: 100, crop: 70 } },
+  warehouse: { name: "倉庫", icon: "📦", role: "提高資源上限", cost: { wood: 130, clay: 160, iron: 90, crop: 70 } },
+  granary: { name: "穀倉", icon: "🌾", role: "保存穀物", cost: { wood: 120, clay: 110, iron: 90, crop: 140 } },
+  barracks: { name: "兵營", icon: "⚔️", role: "訓練士兵", cost: { wood: 180, clay: 150, iron: 170, crop: 90 } },
+  rally: { name: "集結點", icon: "🚩", role: "出兵與防守", cost: { wood: 110, clay: 130, iron: 120, crop: 80 } },
+  wall: { name: "城牆", icon: "🧱", role: "抵抗衝撞車", cost: { wood: 200, clay: 180, iron: 120, crop: 80 } },
+};
+
+const QUESTS = [
+  ["upgrade", "升級任一資源田", "下一步：訓練棍棒兵。"],
+  ["train", "訓練棍棒兵", "下一步：前往地圖，選擇一個綠洲。"],
+  ["select", "選擇地圖目標", "下一步：輸入兵力並攻擊。"],
+  ["attack", "完成一次攻擊", "下一步：查看戰報。"],
+  ["report", "查看戰報", "下一步：按立即同步，存到 Google Sheets。"],
+  ["cloud", "完成雲端存檔", "教學完成，可以繼續升級、訓練與防守。"],
+];
+
+let state = normalize(loadInitialState());
+let selectedTileId = null;
+let selectedBuildingId = "main";
+let lastHud = {};
+
+function freshState() {
+  const fields = [
+    ...Array.from({ length: 4 }, (_, i) => field("wood", i)),
+    ...Array.from({ length: 4 }, (_, i) => field("clay", i + 4)),
+    ...Array.from({ length: 4 }, (_, i) => field("iron", i + 8)),
+    ...Array.from({ length: 6 }, (_, i) => field("crop", i + 12)),
+  ];
+
+  return {
+    version: 5,
+    turn: 1,
+    lastTick: Date.now(),
+    lastSaved: "",
+    lastCloudSaved: "",
+    progress: { upgrade: false, train: false, select: false, attack: false, report: false, cloud: false },
+    village: {
+      name: "邊境村莊",
+      warehouseLimit: WAREHOUSE_LIMIT,
+      resources: { wood: 1800, clay: 1800, iron: 1800, crop: 1800 },
+      fields,
+      buildings: Object.keys(BUILDINGS).map((id) => ({ id, level: 1 })),
+    },
+    troops: { clubman: 12, spearman: 4, scout: 2 },
+    map: createMap(),
+    incoming: createIncomingRaid(),
+    reports: [],
+    actionLogs: [],
+    lastBattle: null,
+  };
+}
+
+function field(type, index) {
+  return { id: `${type}_${index}`, type, name: type === "wood" ? "伐木場" : type === "clay" ? "泥土坑" : type === "iron" ? "鐵礦場" : "農田", level: 1 };
+}
+
+function createMap() {
+  const tiles = [];
+  for (let y = -3; y <= 3; y += 1) {
+    for (let x = -3; x <= 3; x += 1) {
+      tiles.push({ id: `${x}_${y}`, x, y, type: x === 0 && y === 0 ? "village" : "wild", name: x === 0 && y === 0 ? "你的村莊" : "荒地", cleared: false });
+    }
+  }
+
+  const targets = [
+    { id: "-1_1", type: "oasis", name: "森林綠洲", bonus: "木材 +25%", animals: 18, resources: { wood: 120, clay: 45, iron: 35, crop: 55 } },
+    { id: "2_-1", type: "oasis", name: "泥土綠洲", bonus: "泥土 +25%", animals: 10, resources: { wood: 50, clay: 135, iron: 40, crop: 60 } },
+    { id: "1_2", type: "oasis", name: "穀物綠洲", bonus: "穀物 +25%", animals: 26, resources: { wood: 40, clay: 60, iron: 45, crop: 160 } },
+    { id: "-2_-2", type: "oasis", name: "鐵礦綠洲", bonus: "鐵礦 +25%", animals: 14, resources: { wood: 70, clay: 45, iron: 140, crop: 40 } },
+    { id: "3_2", type: "camp", name: "野獸營地", bonus: "小型戰利品", animals: 8, resources: { wood: 45, clay: 40, iron: 25, crop: 35 } },
+    { id: "-3_0", type: "camp", name: "狼穴", bonus: "小型戰利品", animals: 12, resources: { wood: 35, clay: 55, iron: 40, crop: 25 } },
+  ];
+  for (const target of targets) Object.assign(tiles.find((tile) => tile.id === target.id), target);
+  return tiles;
+}
+
+function createIncomingRaid() {
+  const delay = 120 + Math.floor(Math.random() * 180);
+  return {
+    id: `raid_${Date.now()}`,
+    arriveAt: Date.now() + delay * 1000,
+    clubman: 8 + Math.floor(Math.random() * 12),
+    ram: Math.random() > 0.55 ? 1 : 0,
+    catapult: Math.random() > 0.75 ? 1 : 0,
+  };
+}
+
+function loadInitialState() {
+  localStorage.setItem(ENDPOINT_KEY, CLOUD_ENDPOINT);
+  for (const key of OLD_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore unavailable storage.
+    }
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  return freshState();
+}
+
+function normalize(saved) {
+  const base = freshState();
+  const village = saved.village || {};
+  return {
+    ...base,
+    ...saved,
+    version: 5,
+    progress: { ...base.progress, ...(saved.progress || {}) },
+    village: {
+      ...base.village,
+      ...village,
+      resources: { ...base.village.resources, ...(village.resources || {}) },
+      fields: Array.isArray(village.fields) && village.fields.length ? village.fields.map((item, index) => ({ ...field(item.type || "wood", index), ...item, level: Math.max(1, Number(item.level || 1)) })) : base.village.fields,
+      buildings: normalizeBuildings(village.buildings),
+    },
+    troops: { ...base.troops, ...(saved.troops || {}) },
+    map: normalizeMap(saved.map, base.map),
+    incoming: saved.incoming && saved.incoming.arriveAt ? saved.incoming : createIncomingRaid(),
+    reports: Array.isArray(saved.reports) ? saved.reports : [],
+    actionLogs: Array.isArray(saved.actionLogs) ? saved.actionLogs : [],
+  };
+}
+
+function normalizeBuildings(saved) {
+  const list = Array.isArray(saved) ? saved : [];
+  return Object.keys(BUILDINGS).map((id) => {
+    const current = list.find((item) => item.id === id);
+    return { id, level: Math.max(1, Number(current?.level || 1)) };
+  });
+}
+
+function normalizeMap(saved, base) {
+  if (!Array.isArray(saved) || saved.length !== 49) return base;
+  return base.map((tile) => {
+    const old = saved.find((item) => item.id === tile.id);
+    if (!old) return tile;
+    if (tile.type === "oasis" || tile.type === "camp") return { ...tile, cleared: Boolean(old.cleared), animals: old.cleared ? 0 : Number(old.animals ?? tile.animals) };
+    return tile;
+  });
+}
+
+function rates() {
+  const result = { wood: 0, clay: 0, iron: 0, crop: 0 };
+  for (const item of state.village.fields) result[item.type] += 16 + item.level * 12;
+  result.crop = Math.max(0, result.crop - upkeep());
+  return result;
+}
+
+function upkeep() {
+  return Object.entries(state.troops).reduce((sum, [unit, amount]) => sum + amount * UNITS[unit].upkeep, 0);
+}
+
+function totalTroops() {
+  return Object.values(state.troops).reduce((sum, amount) => sum + amount, 0);
+}
+
+function population() {
+  return 26 + state.village.fields.reduce((sum, item) => sum + item.level, 0) + state.village.buildings.reduce((sum, item) => sum + item.level, 0) + Math.floor(totalTroops() / 4);
+}
+
+function warehouseLimit() {
+  return Number(state.village.warehouseLimit || WAREHOUSE_LIMIT) + (buildingLevel("warehouse") - 1) * 1500 + (buildingLevel("granary") - 1) * 900;
+}
+
+function buildingLevel(id) {
+  return Math.max(1, Number(state.village.buildings.find((item) => item.id === id)?.level || 1));
+}
+
+function tick() {
+  const now = Date.now();
+  const hours = Math.max(0, (now - Number(state.lastTick || now)) / 3600000);
+  if (hours > 0.0003) {
+    addResources(hours);
+    state.lastTick = now;
+  }
+  if (state.incoming && now >= state.incoming.arriveAt) resolveIncomingRaid();
+}
+
+function addResources(hours) {
+  const cap = warehouseLimit();
+  const currentRates = rates();
+  for (const key of Object.keys(RES)) state.village.resources[key] = Math.min(cap, state.village.resources[key] + currentRates[key] * hours);
+}
+
+function fieldCost(item) {
+  const level = Number(item.level || 1);
+  return { wood: 80 + level * 42, clay: 70 + level * 36, iron: 55 + level * 31, crop: 35 + level * 24 };
+}
+
+function buildingCost(item) {
+  const base = BUILDINGS[item.id].cost;
+  const level = Number(item.level || 1);
+  return Object.fromEntries(Object.entries(base).map(([key, value]) => [key, Math.round(value * (1 + level * 0.42))]));
+}
+
+function canPay(cost) {
+  return Object.entries(cost).every(([key, value]) => state.village.resources[key] >= value);
+}
+
+function pay(cost) {
+  if (!canPay(cost)) {
+    showNotice("資源不足。可以先按「收成 / 更新」或「模擬 1 小時」。", "warn");
+    return false;
+  }
+  for (const [key, value] of Object.entries(cost)) state.village.resources[key] -= value;
+  return true;
+}
+
+function upgradeField(id) {
+  tick();
+  const item = state.village.fields.find((fieldItem) => fieldItem.id === id);
+  if (!item) return;
+  const cost = fieldCost(item);
+  if (!pay(cost)) return render();
+  item.level += 1;
+  state.turn += 1;
+  completeQuest("upgrade");
+  logAction("upgrade", `${item.name} 升級到等級 ${item.level}`, { id, cost });
+  commit(`${item.name} 升級成功，現在是等級 ${item.level}。`, true);
+}
+
+function upgradeBuilding(id) {
+  tick();
+  const item = state.village.buildings.find((buildingItem) => buildingItem.id === id);
+  if (!item) return;
+  const cost = buildingCost(item);
+  if (!pay(cost)) return render();
+  item.level += 1;
+  state.turn += 1;
+  logAction("building", `${BUILDINGS[id].name} 升級到等級 ${item.level}`, { id, cost });
+  commit(`${BUILDINGS[id].name} 升級成功，現在是等級 ${item.level}。`, true);
+}
+
+function train(unit, amount) {
+  tick();
+  const cost = multiply(UNITS[unit].cost, amount);
+  if (!pay(cost)) return render();
+  state.troops[unit] += amount;
+  state.turn += 1;
+  if (unit === "clubman") completeQuest("train");
+  logAction("train", `訓練完成，${UNITS[unit].name} +${amount}`, { unit, amount, cost });
+  commit(`訓練完成，${UNITS[unit].name} +${amount}。`, true);
+}
+
+function collectResources() {
+  tick();
+  logAction("collect", "收成 / 更新資源");
+  commit("資源已更新。", false);
+}
+
+function simulateHour() {
+  addResources(1);
+  state.lastTick = Date.now();
+  state.turn += 1;
+  logAction("simulate", "模擬 1 小時");
+  commit("已模擬 1 小時，資源增加了。", false);
+}
+
+function attackTarget() {
+  tick();
+  const target = state.map.find((tile) => tile.id === selectedTileId);
+  if (!target || !isAttackable(target)) {
+    showNotice("請先在地圖上選擇綠洲或野獸營地。", "warn");
+    return;
+  }
+  const sent = { clubman: readNumber("sendClub"), spearman: readNumber("sendSpear") };
+  if (sent.clubman + sent.spearman <= 0) return showNotice("至少要派出一名士兵。", "warn");
+  if (sent.clubman > state.troops.clubman || sent.spearman > state.troops.spearman) return showNotice("派出的士兵超過目前兵力。", "warn");
+
+  const attack = sent.clubman * UNITS.clubman.attack + sent.spearman * UNITS.spearman.attack;
+  const defense = target.animals * 23 + Math.floor(Math.random() * 60);
+  const victory = attack >= defense;
+  const lossRate = victory ? Math.min(0.42, defense / Math.max(1, attack) * 0.36) : Math.min(0.9, defense / Math.max(1, attack) * 0.58);
+  const losses = { clubman: Math.min(sent.clubman, Math.ceil(sent.clubman * lossRate)), spearman: Math.min(sent.spearman, Math.ceil(sent.spearman * lossRate)) };
+  state.troops.clubman -= losses.clubman;
+  state.troops.spearman -= losses.spearman;
+
+  const loot = victory ? { ...target.resources } : { wood: 0, clay: 0, iron: 0, crop: 0 };
+  if (victory) {
+    for (const key of Object.keys(RES)) state.village.resources[key] = Math.min(warehouseLimit(), state.village.resources[key] + (loot[key] || 0));
+    target.cleared = true;
+    target.animals = 0;
+  } else {
+    target.animals = Math.max(1, target.animals - Math.ceil((sent.clubman + sent.spearman) / 4));
+  }
+
+  const report = {
+    id: `battle_${Date.now()}`,
+    time: new Date().toLocaleString("zh-TW"),
+    isoTime: new Date().toISOString(),
+    type: "attack",
+    target: target.name,
+    coordinate: `(${target.x}, ${target.y})`,
+    result: victory ? "勝利" : "失敗",
+    sent,
+    losses,
+    loot,
+    cleared: victory,
+  };
+  state.lastBattle = report;
+  state.reports.unshift(report);
+  state.reports = state.reports.slice(0, 40);
+  completeQuest("attack");
+  logAction("attack", `攻擊${target.name}：${report.result}`, { sent, losses, loot });
+  commit(victory ? `攻擊勝利：${target.name} 已清除。` : `攻擊失敗：${target.name} 還有野獸。`, true);
+}
+
+function resolveIncomingRaid() {
+  const raid = state.incoming;
+  const defense = state.troops.clubman * UNITS.clubman.defense + state.troops.spearman * UNITS.spearman.defense + state.troops.scout * UNITS.scout.defense + buildingLevel("wall") * 35;
+  const attack = raid.clubman * 36 + raid.ram * 120 + raid.catapult * 170;
+  const defended = defense >= attack;
+  const stolen = { wood: 0, clay: 0, iron: 0, crop: 0 };
+  const damage = [];
+
+  if (!defended) {
+    for (const key of Object.keys(RES)) {
+      stolen[key] = Math.min(Math.floor(state.village.resources[key] * 0.12), 240);
+      state.village.resources[key] -= stolen[key];
+    }
+    if (raid.ram) damageBuilding("wall", damage);
+    if (raid.catapult) {
+      const candidates = state.village.buildings.filter((item) => item.id !== "wall" && item.level > 1);
+      if (candidates.length) damageBuilding(candidates[Math.floor(Math.random() * candidates.length)].id, damage);
+    }
+  }
+
+  const report = {
+    id: `defense_${Date.now()}`,
+    time: new Date().toLocaleString("zh-TW"),
+    isoTime: new Date().toISOString(),
+    type: "defense",
+    target: "你的村莊",
+    coordinate: "(0, 0)",
+    result: defended ? "防守成功" : "防守失敗",
+    sent: { attackers: raid.clubman, ram: raid.ram, catapult: raid.catapult },
+    losses: defended ? { attackers: raid.clubman } : { clubman: Math.ceil(state.troops.clubman * 0.08), spearman: Math.ceil(state.troops.spearman * 0.08) },
+    loot: stolen,
+    cleared: defended,
+    damage,
+  };
+  state.reports.unshift(report);
+  state.reports = state.reports.slice(0, 40);
+  state.lastBattle = report;
+  state.incoming = createIncomingRaid();
+  logAction("defense", report.result, { stolen, damage });
+  commit(defended ? "防守成功，敵軍被擊退。" : `防守失敗，資源被搶：${formatCost(stolen)}。`, true);
+}
+
+function damageBuilding(id, damage) {
+  const building = state.village.buildings.find((item) => item.id === id);
+  if (!building || building.level <= 1) return;
+  building.level -= 1;
+  damage.push(`${BUILDINGS[id].name} 降到等級 ${building.level}`);
+}
+
+function selectTile(id) {
+  selectedTileId = id;
+  const target = state.map.find((tile) => tile.id === id);
+  if (target && isAttackable(target)) completeQuest("select");
+  showNotice(target ? `已選取：${target.name} (${target.x}, ${target.y})。` : "已選取地圖格。");
+  saveLocal();
+  render();
+}
+
+function isAttackable(tile) {
+  return (tile.type === "oasis" || tile.type === "camp") && !tile.cleared;
+}
+
+function logAction(type, message, details = {}) {
+  state.actionLogs.unshift({ id: `action_${Date.now()}`, time: new Date().toLocaleString("zh-TW"), isoTime: new Date().toISOString(), turn: state.turn, type, message, details });
+  state.actionLogs = state.actionLogs.slice(0, 80);
+}
+
+function completeQuest(id) {
+  if (state.progress[id]) return;
+  state.progress[id] = true;
+}
+
+function commit(message, cloud) {
+  saveLocal();
+  showNotice(message, "success");
+  render();
+  if (cloud) syncCloudDebounced(message);
+}
+
+function saveLocal() {
+  state.lastSaved = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let syncTimer = null;
+function syncCloudDebounced(reason) {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => syncCloud(reason), 1200);
+}
+
+async function syncCloud(reason = "手動同步") {
+  try {
+    updateCloudStatus("同步中...");
+    const payload = {
+      action: "saveState",
+      reason,
+      savedAt: new Date().toISOString(),
+      state: { ...state, cloudSaveId: `save_${Date.now()}` },
+      actionLogs: state.actionLogs.slice(0, 5),
+      battleLogs: state.reports.slice(0, 3),
+    };
+    await postByForm(payload);
+    await wait(2800);
+    const loaded = await loadCloudState();
+    if (!loaded?.state?.village) throw new Error("雲端沒有讀回 state_json");
+    state.lastCloudSaved = loaded.savedAt || new Date().toISOString();
+    completeQuest("cloud");
+    saveLocal();
+    updateCloudStatus(`已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
+    render();
+  } catch (error) {
+    updateCloudStatus(`同步失敗：${error.message}`, "fail");
+  }
+}
+
+function postByForm(payload) {
+  return new Promise((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.name = `cloud_target_${Date.now()}`;
+    iframe.hidden = true;
+    document.body.appendChild(iframe);
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = CLOUD_ENDPOINT;
+    form.target = iframe.name;
+    form.hidden = true;
+
+    const input = document.createElement("input");
+    input.name = "payload";
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+
+    setTimeout(() => {
+      form.remove();
+      iframe.remove();
+      resolve();
+    }, 1600);
+  });
+}
+
+function loadCloudState() {
+  return new Promise((resolve, reject) => {
+    const callback = `frontierCloud_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const script = document.createElement("script");
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("雲端讀取逾時"));
+    }, 10000);
+    window[callback] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callback];
+      script.remove();
+    }
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("雲端讀取失敗"));
+    };
+    script.src = `${CLOUD_ENDPOINT}?action=loadState&callback=${callback}&t=${Date.now()}`;
+    document.body.appendChild(script);
+  });
+}
+
+async function loadFromCloud() {
+  try {
+    updateCloudStatus("正在載入雲端存檔...");
+    const result = await loadCloudState();
+    if (!result.ok || !result.state) throw new Error(result.error || "沒有雲端存檔");
+    state = normalize(result.state);
+    saveLocal();
+    updateCloudStatus("已載入 Google Sheets 雲端存檔。", "ok");
+    showNotice("已載入雲端存檔。", "success");
+    render();
+  } catch (error) {
+    updateCloudStatus(`載入失敗：${error.message}`, "fail");
+  }
+}
+
+function updateCloudStatus(message, mode = "") {
+  const el = byId("cloudStatus");
+  el.textContent = message;
+  el.className = `sync-status ${mode}`.trim();
+}
+
+function switchView(view) {
+  document.querySelectorAll(".view").forEach((el) => el.classList.toggle("active", el.id === view));
+  document.querySelectorAll(".nav button").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  if (view === "reports") completeQuest("report");
+  render();
+}
+
+function render() {
+  tick();
+  renderHud();
+  renderQuests();
+  renderBuildings();
+  renderFields();
+  renderTraining();
+  renderMap();
+  renderTarget();
+  renderMilitary();
+  renderReports();
+  renderSave();
+}
+
+function renderHud() {
+  const currentRates = rates();
+  for (const key of Object.keys(RES)) {
+    setText(key, Math.floor(state.village.resources[key]).toLocaleString("zh-TW"));
+    setText(`${key}Rate`, `+${currentRates[key]}/h`);
+  }
+  setText("population", String(population()));
+  setText("soldiers", String(totalTroops()));
+  setText("upkeep", `耗糧 ${upkeep()}/h`);
+  const remaining = Math.max(0, Math.ceil((state.incoming.arriveAt - Date.now()) / 1000));
+  setText("raidTimer", remaining ? formatTime(remaining) : "抵達");
+  setText("raidHint", state.incoming.ram || state.incoming.catapult ? "含攻城器械" : "搶奪資源");
+
+  for (const key of ["wood", "clay", "iron", "crop", "soldiers"]) {
+    const el = key === "soldiers" ? document.querySelector(".hud article:nth-child(6)") : document.querySelector(`#${key}`)?.closest("article");
+    const value = key === "soldiers" ? totalTroops() : Math.floor(state.village.resources[key]);
+    if (el && lastHud[key] !== undefined && lastHud[key] !== value) {
+      el.classList.remove("pulse");
+      void el.offsetWidth;
+      el.classList.add("pulse");
+    }
+    lastHud[key] = value;
+  }
+}
+
+function renderQuests() {
+  byId("questList").innerHTML = QUESTS.map(([id, text], index) => `<li class="${state.progress[id] ? "done" : ""}">${state.progress[id] ? "✓" : index + 1}. ${text}</li>`).join("");
+  const next = QUESTS.find(([id]) => !state.progress[id]) || QUESTS[QUESTS.length - 1];
+  setText("nextStep", next[2]);
+}
+
+function renderBuildings() {
+  byId("buildings").innerHTML = state.village.buildings.map((item) => {
+    const def = BUILDINGS[item.id];
+    return `<button class="card building-card ${item.id === selectedBuildingId ? "selected" : ""}" data-building="${item.id}">
+      <span class="big">${def.icon}</span><b>${def.name}</b><small>等級 ${item.level}</small><small>${def.role}</small>
+    </button>`;
+  }).join("");
+  const item = state.village.buildings.find((building) => building.id === selectedBuildingId) || state.village.buildings[0];
+  const def = BUILDINGS[item.id];
+  const cost = buildingCost(item);
+  byId("buildingDetail").innerHTML = `<h2>${def.icon} ${def.name}</h2>
+    <p>${def.role}</p>
+    <div class="statline"><span>目前等級</span><b>${item.level}</b></div>
+    <div class="statline"><span>升級成本</span><b>${formatCost(cost)}</b></div>
+    <button class="primary full" data-upgrade-building="${item.id}" ${canPay(cost) ? "" : "disabled"}>${canPay(cost) ? "升級建築" : "資源不足"}</button>`;
+}
+
+function renderFields() {
+  byId("fields").innerHTML = state.village.fields.map((item) => {
+    const cost = fieldCost(item);
+    return `<article class="card field ${item.type}">
+      <span class="big">${RES[item.type].icon}</span>
+      <b>${item.name}</b>
+      <small>等級 ${item.level}，產量 +${16 + item.level * 12}/h</small>
+      <small>升級成本 ${formatCost(cost)}</small>
+      <button data-upgrade-field="${item.id}" ${canPay(cost) ? "" : "disabled"}>${canPay(cost) ? "升級" : "資源不足"}</button>
+    </article>`;
+  }).join("");
+}
+
+function renderTraining() {
+  setText("trainingSummary", `目前士兵 ${totalTroops()}`);
+  byId("training").innerHTML = Object.entries(UNITS).filter(([id]) => id !== "scout").map(([id, unit]) => {
+    const amounts = id === "clubman" ? [1, 3] : [1, 2];
+    return `<article class="card">
+      <span class="big">${unit.icon}</span><b>${unit.name}</b>
+      <small>目前 ${state.troops[id]}，攻 ${unit.attack} / 防 ${unit.defense} / 耗糧 ${unit.upkeep}</small>
+      <small>成本 ${formatCost(unit.cost)}</small>
+      <div class="button-row">${amounts.map((amount) => {
+        const cost = multiply(unit.cost, amount);
+        return `<button data-train="${id}" data-amount="${amount}" ${canPay(cost) ? "" : "disabled"}>${canPay(cost) ? `訓練 x${amount}` : `資源不足 x${amount}`}</button>`;
+      }).join("")}</div>
+    </article>`;
+  }).join("");
+}
+
+function renderMap() {
+  byId("mapGrid").innerHTML = state.map.map((tile) => `<button class="tile ${tile.type} ${tile.id === selectedTileId ? "selected" : ""} ${tile.cleared ? "cleared" : ""}" data-tile="${tile.id}">
+    <span>${tileIcon(tile)}</span><b>${tile.name}</b><small>(${tile.x}, ${tile.y}) ${tile.animals ? `野獸 ${tile.animals}` : ""}</small>
+  </button>`).join("");
+}
+
+function renderTarget() {
+  const target = state.map.find((tile) => tile.id === selectedTileId);
+  if (!target) {
+    byId("targetInfo").textContent = "尚未選擇目標。";
+    return;
+  }
+  if (!isAttackable(target)) {
+    byId("targetInfo").innerHTML = `<b>${tileIcon(target)} ${target.name}</b><p>這個格子目前不能攻擊。</p>`;
+    return;
+  }
+  byId("targetInfo").innerHTML = `<b>${tileIcon(target)} ${target.name} (${target.x}, ${target.y})</b>
+    <p>野獸：${target.animals}</p>
+    <p>戰利品：${formatCost(target.resources)}</p>
+    <p>建議棍棒兵：${Math.max(1, Math.ceil((target.animals * 23 + 45) / UNITS.clubman.attack))}</p>`;
+}
+
+function renderMilitary() {
+  byId("troops").innerHTML = Object.entries(UNITS).map(([id, unit]) => `<article class="card">
+    <span class="big">${unit.icon}</span><b>${unit.name} x${state.troops[id]}</b>
+    <small>攻擊 ${unit.attack} / 防禦 ${unit.defense} / 耗糧 ${unit.upkeep}</small>
+  </article>`).join("");
+  byId("defenseBox").innerHTML = `<div class="target-box">
+    <b>下一波敵襲：${formatTime(Math.max(0, Math.ceil((state.incoming.arriveAt - Date.now()) / 1000)))}</b>
+    <p>敵軍：步兵 ${state.incoming.clubman}、衝撞車 ${state.incoming.ram}、投石機 ${state.incoming.catapult}</p>
+    <p>防守靠矛兵與城牆。衝撞車會打城牆，投石機會讓建築降級。</p>
+  </div>`;
+}
+
+function renderReports() {
+  if (!state.reports.length) {
+    byId("reportsList").innerHTML = "<li>尚無戰報。攻擊或防守後會出現在這裡。</li>";
+    return;
+  }
+  byId("reportsList").innerHTML = state.reports.map((report) => `<li>
+    <b>${report.result}</b> ${report.target} ${report.coordinate || ""}
+    <small>${report.time}</small>
+    <p>兵力：${JSON.stringify(report.sent)}；損失：${JSON.stringify(report.losses)}</p>
+    <p>資源：${formatCost(report.loot || {})}${report.damage?.length ? `；損壞：${report.damage.join("、")}` : ""}</p>
+  </li>`).join("");
+}
+
+function renderSave() {
+  byId("endpointInput").value = CLOUD_ENDPOINT;
+  setText("localStatus", state.lastSaved ? `本機備用存檔：${new Date(state.lastSaved).toLocaleString("zh-TW")}` : "尚無本機存檔。");
+  if (!byId("cloudStatus").dataset.touched) updateCloudStatus(state.lastCloudSaved ? `已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。` : "Google Sheets 雲端存檔已設定完成。");
+}
+
+function bindEvents() {
+  document.querySelector(".nav").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-view]");
+    if (button) switchView(button.dataset.view);
+  });
+  document.body.addEventListener("click", (event) => {
+    const viewJump = event.target.closest("[data-view-jump]");
+    if (viewJump) switchView(viewJump.dataset.viewJump);
+    const jump = event.target.closest("[data-jump]");
+    if (jump) byId(jump.dataset.jump === "fields" ? "fieldsPanel" : "trainingPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    const fieldButton = event.target.closest("[data-upgrade-field]");
+    if (fieldButton && !fieldButton.disabled) upgradeField(fieldButton.dataset.upgradeField);
+    const buildingCard = event.target.closest("[data-building]");
+    if (buildingCard) {
+      selectedBuildingId = buildingCard.dataset.building;
+      renderBuildings();
+    }
+    const buildingButton = event.target.closest("[data-upgrade-building]");
+    if (buildingButton && !buildingButton.disabled) upgradeBuilding(buildingButton.dataset.upgradeBuilding);
+    const trainButton = event.target.closest("[data-train]");
+    if (trainButton && !trainButton.disabled) train(trainButton.dataset.train, Number(trainButton.dataset.amount));
+    const tile = event.target.closest("[data-tile]");
+    if (tile) selectTile(tile.dataset.tile);
+  });
+  byId("collectBtn").addEventListener("click", collectResources);
+  byId("hourBtn").addEventListener("click", simulateHour);
+  byId("attackBtn").addEventListener("click", attackTarget);
+  byId("syncBtn").addEventListener("click", () => syncCloud("手動同步"));
+  byId("loadCloudBtn").addEventListener("click", loadFromCloud);
+  byId("localSaveBtn").addEventListener("click", () => {
+    saveLocal();
+    showNotice("已寫入本機備用存檔。", "success");
+    render();
+  });
+  byId("exportBtn").addEventListener("click", exportSave);
+  byId("resetBtn").addEventListener("click", () => {
+    if (!confirm("確定重置遊戲？")) return;
+    state = freshState();
+    selectedTileId = null;
+    saveLocal();
+    render();
+  });
+}
+
+function exportSave() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "frontier-village-save.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showNotice(message, tone = "") {
+  const el = byId("notice");
+  el.textContent = message;
+  el.className = `notice ${tone}`.trim();
+}
+
+function tileIcon(tile) {
+  if (tile.type === "village") return "🏠";
+  if (tile.cleared) return "✅";
+  if (tile.type === "oasis") return "🌳";
+  if (tile.type === "camp") return "🐾";
+  return "🌾";
+}
+
+function multiply(cost, amount) {
+  return Object.fromEntries(Object.entries(cost).map(([key, value]) => [key, value * amount]));
+}
+
+function formatCost(cost) {
+  return Object.keys(RES).map((key) => `${RES[key].icon}${Math.floor(cost[key] || 0)}`).join(" ");
+}
+
+function formatTime(seconds) {
+  const s = Math.max(0, Number(seconds || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m ? `${m}:${String(r).padStart(2, "0")}` : `${r}秒`;
+}
+
+function readNumber(id) {
+  return Math.max(0, Math.floor(Number(byId(id).value) || 0));
+}
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+function setText(id, value) {
+  const el = byId(id);
+  if (el) el.textContent = value;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+bindEvents();
+saveLocal();
+render();
+setInterval(() => {
+  tick();
+  saveLocal();
+  render();
+}, 5000);
+setInterval(() => syncCloud("每 60 秒自動同步"), 60000);
