@@ -20,8 +20,10 @@
 - 地圖頁：7x7 地圖、綠洲、野獸營地、荒地、已選取狀態。
 - 出兵流程：選目標、輸入兵力、攻擊、結果卡片、查看戰報。
 - 新手任務：升級、訓練、前往地圖、選目標、攻擊、查看戰報、雲端存檔。
-- 本機自動存檔：升級/訓練/攻擊/任務完成時寫入 localStorage，每 30 秒也自動保存。
+- 本機備用存檔：升級/訓練/攻擊/任務完成時寫入 localStorage，並每 5 秒自動保存一次。
 - 雲端自動同步：設定 endpoint 後，升級/訓練/攻擊後 debounce 同步，每 60 秒也同步一次。
+- 雲端優先載入：開啟網站時會先讀取 Google Sheets 最新 `player_state`，localStorage 只作備援。
+- 紀錄防膨脹：前端只送尚未同步過的新紀錄；v4 Apps Script 後端可去除重複 id 並保留最新紀錄。
 
 ## Google Sheets 同步
 
@@ -34,6 +36,14 @@ https://docs.google.com/spreadsheets/d/1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2
 - `player_state`：最新完整 state JSON。
 - `battle_logs`：每次戰鬥追加一筆紀錄。
 - `action_logs`：升級、訓練、手動存檔等操作紀錄。
+- `log_summary`：v4 後端整理紀錄時寫入摘要。
+
+資料成長規則：
+
+- `player_state` 只保留一列最新存檔，不會無限制變大。
+- `battle_logs` 預設保留最新 300 筆，重複 id 會合併。
+- `action_logs` 預設保留最新 500 筆，重複 id 會合併。
+- 「存檔」頁的「整理雲端紀錄」按鈕會呼叫 v4 後端的 `compactLogs`。
 
 部署方式：
 
@@ -44,4 +54,4 @@ https://docs.google.com/spreadsheets/d/1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2
 5. 部署成 Web App。
 6. 把 Web App URL 貼到遊戲「存檔」頁的 endpoint。
 
-未設定 endpoint 時，遊戲仍可在線上遊玩，但只會使用瀏覽器本機存檔。
+注意：GitHub 上的 `apps-script/Code.gs` 只是後端原始碼備份；Google Apps Script Web App 不會因為 GitHub 更新而自動重新部署。若要讓 `compactLogs`、`stats`、`log_summary` 生效，必須把最新版 `Code.gs` 套到 Apps Script 專案並重新部署 Web App。
