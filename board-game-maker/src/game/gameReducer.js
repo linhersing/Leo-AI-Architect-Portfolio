@@ -5,6 +5,7 @@ import { advanceTurn, movePlayer } from "./movement.js";
 import { applyTileEffect, buyProperty, upgradeProperty } from "./tileEffects.js";
 
 const COLORS = ["#d34a3a", "#2f7bc2", "#2f8f55", "#8a57c7"];
+const EMOJIS = ["🧭", "🚀", "💎", "🌟"];
 const MAX_ROUNDS = 20;
 
 export function createInitialState(playerCount = 2) {
@@ -127,6 +128,7 @@ function createPlayers(count) {
   return Array.from({ length: Math.max(2, Math.min(4, Number(count || 2))) }, (_, index) => ({
     id: `player-${index + 1}`,
     name: `玩家 ${index + 1}`,
+    emoji: EMOJIS[index],
     color: COLORS[index],
     position: 0,
     money: 3000,
