@@ -3,6 +3,7 @@ const STORAGE_KEY = "frontier-village-stable-save";
 const OLD_KEYS = ["frontier-village-save-v4", "frontier-village-save-v3", "frontier-village-save-v2", "frontier-village-save"];
 const ENDPOINT_KEY = "frontier-village-sheet-endpoint";
 const WAREHOUSE_LIMIT = 9000;
+const CLOUD_VERIFY_DELAY_MS = 2800;
 
 const RES = {
   wood: { name: "木材", icon: "🪵" },
@@ -168,6 +169,35 @@ function normalizeMap(saved, base) {
     if (tile.type === "oasis" || tile.type === "camp") return { ...tile, cleared: Boolean(old.cleared), animals: old.cleared ? 0 : Number(old.animals ?? tile.animals) };
     return tile;
   });
+}
+
+function timeValue(value) {
+  const parsed = Date.parse(value || "");
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function progressScore(save) {
+  const village = save?.village || {};
+  const fields = Array.isArray(village.fields) ? village.fields : [];
+  const buildings = Array.isArray(village.buildings) ? village.buildings : [];
+  const troops = save?.troops || {};
+  const reports = Array.isArray(save?.reports) ? save.reports : [];
+  const fieldLevels = fields.reduce((sum, item) => sum + Math.max(1, Number(item.level || 1)), 0);
+  const buildingLevels = buildings.reduce((sum, item) => sum + Math.max(1, Number(item.level || 1)), 0);
+  const troopCount = Object.values(troops).reduce((sum, amount) => sum + Number(amount || 0), 0);
+  return Number(save?.turn || 1) * 1000 + fieldLevels * 35 + buildingLevels * 45 + troopCount * 8 + reports.length * 60;
+}
+
+function shouldAdoptCloud(result) {
+  if (!result?.state?.village) return false;
+  const cloud = normalize(result.state);
+  const localScore = progressScore(state);
+  const cloudScore = progressScore(cloud);
+  if (cloudScore !== localScore) return cloudScore > localScore;
+
+  const cloudTime = timeValue(result.savedAt || cloud.lastCloudSaved || cloud.lastSaved);
+  const localTime = timeValue(state.lastSaved || state.lastCloudSaved);
+  return cloudTime >= localTime;
 }
 
 function rates() {
@@ -415,8 +445,8 @@ function commit(message, cloud) {
   if (cloud) syncCloudDebounced(message);
 }
 
-function saveLocal() {
-  state.lastSaved = new Date().toISOString();
+function saveLocal(markChange = true) {
+  if (markChange || !state.lastSaved) state.lastSaved = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -431,22 +461,27 @@ async function syncCloud(reason = "手動同步") {
     updateCloudStatus("同步中...");
     const actionLogs = unsyncedActionLogs();
     const battleLogs = unsyncedBattleLogs();
+    const cloudSaveId = `save_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const savedAt = new Date().toISOString();
+    state.cloudSaveId = cloudSaveId;
+    state.lastSaved = savedAt;
     const payload = {
       action: "saveState",
       reason,
-      savedAt: new Date().toISOString(),
-      state: { ...state, cloudSaveId: `save_${Date.now()}` },
+      savedAt,
+      state: { ...state },
       actionLogs,
       battleLogs,
     };
     await postByForm(payload);
-    await wait(2800);
+    await wait(CLOUD_VERIFY_DELAY_MS);
     const loaded = await loadCloudState();
     if (!loaded?.state?.village) throw new Error("雲端沒有讀回 state_json");
+    if (loaded.state.cloudSaveId !== cloudSaveId) throw new Error("雲端讀回的是舊存檔，這次同步沒有成功寫入。請稍後再同步一次，或檢查 Apps Script 部署版本。");
     state.lastCloudSaved = loaded.savedAt || new Date().toISOString();
     markLogsSynced(actionLogs, battleLogs);
     completeQuest("cloud");
-    saveLocal();
+    saveLocal(false);
     updateCloudStatus(`已同步到 Google Sheets（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}，新增 ${actionLogs.length} 筆操作、${battleLogs.length} 筆戰報）。`, "ok");
     render();
   } catch (error) {
@@ -566,7 +601,7 @@ async function loadFromCloud() {
     const result = await loadCloudState();
     if (!result.ok || !result.state) throw new Error(result.error || "沒有雲端存檔");
     adoptCloudState(result);
-    saveLocal();
+    saveLocal(false);
     updateCloudStatus("已載入 Google Sheets 雲端存檔。", "ok");
     showNotice("已載入雲端存檔。", "success");
     render();
@@ -587,12 +622,17 @@ async function bootCloudFirst() {
     const result = await loadCloudState();
     if (!result.ok || !result.state) throw new Error(result.error || "沒有雲端存檔");
     const cloudSavedAt = String(result.savedAt || result.state.lastCloudSaved || "");
-    if (!state.lastCloudSaved || cloudSavedAt !== String(state.lastCloudSaved)) {
+    if ((!state.lastCloudSaved || cloudSavedAt !== String(state.lastCloudSaved)) && shouldAdoptCloud(result)) {
       adoptCloudState(result);
-      saveLocal();
+      saveLocal(false);
       showNotice("已自動載入 Google Sheets 雲端存檔，手機與電腦會以這份資料為準。", "success");
       updateCloudStatus(`已自動載入雲端存檔（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
       render();
+      return;
+    }
+    if (cloudSavedAt && cloudSavedAt !== String(state.lastCloudSaved)) {
+      updateCloudStatus("偵測到本機進度比 Google Sheets 更新，已保留本機存檔並準備回寫雲端。", "ok");
+      syncCloudDebounced("本機進度較新，自動回寫 Google Sheets");
       return;
     }
     updateCloudStatus(`Google Sheets 已連線，雲端存檔為最新（${new Date(state.lastCloudSaved).toLocaleString("zh-TW")}）。`, "ok");
@@ -864,12 +904,11 @@ function wait(ms) {
 }
 
 bindEvents();
-saveLocal();
 render();
 bootCloudFirst();
 setInterval(() => {
   tick();
-  saveLocal();
+  saveLocal(false);
   render();
 }, 5000);
 setInterval(() => syncCloud("每 60 秒自動同步"), 60000);
