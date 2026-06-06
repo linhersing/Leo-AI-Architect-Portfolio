@@ -11,7 +11,7 @@ export function renderTile(tile, players) {
       <p>${escapeHtml(tile.description || "")}</p>
       ${tile.type === "property" ? `<small>價格 ${tile.price} / 過路費 ${tile.rent} / Lv.${tile.level}</small>` : ""}
       ${owner ? `<small class="owner" style="--owner:${owner.color}">擁有者：${escapeHtml(owner.name)}</small>` : ""}
-      <div class="tokens">${playersHere.map((player) => `<span title="${escapeHtml(player.name)}" style="background:${player.color}"></span>`).join("")}</div>
+      <div class="tokens">${playersHere.map((player) => `<span title="${escapeHtml(player.name)}" style="background:${player.color}">${escapeHtml(player.emoji || "")}</span>`).join("")}</div>
     </article>
   `;
 }
