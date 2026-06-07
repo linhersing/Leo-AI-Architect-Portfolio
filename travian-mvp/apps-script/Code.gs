@@ -1,11 +1,12 @@
 const SPREADSHEET_ID = '1cZ2tNUGjsGbhqvd24W-eUEygm3-QhySdurFMj-W2ZXc';
 const SECRET_TOKEN = '';
-const BACKEND_VERSION = 'cloud-v4-maintenance-2026-06-04';
+const BACKEND_VERSION = 'cloud-v5-integrated-boardgame-2026-06-07';
 
 const PLAYER_STATE_SHEET = 'player_state';
 const BATTLE_LOGS_SHEET = 'battle_logs';
 const ACTION_LOGS_SHEET = 'action_logs';
 const LOG_SUMMARY_SHEET = 'log_summary';
+const BOARD_GAME_STATE_SHEET = 'board_game_state'; // 新增
 
 const MAX_BATTLE_LOG_ROWS = 300;
 const MAX_ACTION_LOG_ROWS = 500;
@@ -15,6 +16,7 @@ const PLAYER_STATE_HEADERS = ['saved_at', 'source', 'reason', 'turn', 'wood', 'c
 const BATTLE_LOG_HEADERS = ['id', 'time', 'iso_time', 'type', 'target', 'coordinate', 'result', 'sent', 'losses', 'loot', 'cleared', 'damage', 'raw_json'];
 const ACTION_LOG_HEADERS = ['id', 'time', 'iso_time', 'turn', 'type', 'message', 'details', 'raw_json'];
 const LOG_SUMMARY_HEADERS = ['run_at', 'sheet', 'before_rows', 'after_rows', 'duplicates_removed', 'old_rows_removed', 'max_rows'];
+const BOARD_GAME_STATE_HEADERS = ['saved_at', 'game_title', 'players_count', 'current_round', 'finished', 'game_json']; // 新增
 
 function doPost(e) {
   try {
@@ -57,9 +59,9 @@ function setup() {
     ok: true,
     backendVersion: BACKEND_VERSION,
     spreadsheetId: SPREADSHEET_ID,
-    sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET, LOG_SUMMARY_SHEET],
+    sheets: [PLAYER_STATE_SHEET, BATTLE_LOGS_SHEET, ACTION_LOGS_SHEET, LOG_SUMMARY_SHEET, BOARD_GAME_STATE_SHEET],
     limits: { battleLogs: MAX_BATTLE_LOG_ROWS, actionLogs: MAX_ACTION_LOG_ROWS },
-    message: 'Google Sheets save backend ready',
+    message: 'Google Sheets save backend ready (with board game support)',
   };
 }
 
@@ -72,6 +74,8 @@ function saveState(payload) {
     if (!state) return { ok: false, error: 'Missing state', backendVersion: BACKEND_VERSION };
 
     const savedAt = payload.savedAt || new Date().toISOString();
+    
+    // 保存邊境村莊主遊戲狀態
     const sheet = ss.getSheetByName(PLAYER_STATE_SHEET);
     sheet.clearContents();
     sheet.getRange(1, 1, 2, PLAYER_STATE_HEADERS.length).setValues([
@@ -93,6 +97,24 @@ function saveState(payload) {
     ]);
     sheet.setFrozenRows(1);
 
+    // 新增：保存棋盤遊戲狀態
+    if (state.boardGame) {
+      const bgSheet = ss.getSheetByName(BOARD_GAME_STATE_SHEET);
+      bgSheet.clearContents();
+      bgSheet.getRange(1, 1, 2, BOARD_GAME_STATE_HEADERS.length).setValues([
+        BOARD_GAME_STATE_HEADERS,
+        [
+          savedAt,
+          state.boardGame.gameTitle || '',
+          state.boardGame.players ? state.boardGame.players.length : 0,
+          state.boardGame.round || 1,
+          state.boardGame.finished ? 'yes' : 'no',
+          JSON.stringify(state.boardGame),
+        ],
+      ]);
+      bgSheet.setFrozenRows(1);
+    }
+
     const battleResult = appendLogs_(BATTLE_LOGS_SHEET, BATTLE_LOG_HEADERS, payload.battleLogs || [], battleRow_);
     const actionResult = appendLogs_(ACTION_LOGS_SHEET, ACTION_LOG_HEADERS, payload.actionLogs || [], actionRow_);
     const maintenance = maybeCompactLogs_();
@@ -106,6 +128,7 @@ function saveState(payload) {
       battleLogs: battleResult,
       actionLogs: actionResult,
       maintenance: maintenance,
+      boardGameSaved: state.boardGame ? true : false,
     };
   } finally {
     lock.releaseLock();
@@ -124,7 +147,30 @@ function loadState() {
   const savedAtIndex = headers.indexOf('saved_at');
   if (stateIndex < 0 || !values[stateIndex]) return { ok: false, error: 'Missing state_json', backendVersion: BACKEND_VERSION };
 
-  return { ok: true, backendVersion: BACKEND_VERSION, savedAt: savedAtIndex >= 0 ? values[savedAtIndex] : '', state: JSON.parse(values[stateIndex]) };
+  const state = JSON.parse(values[stateIndex]);
+  
+  // 新增：載入棋盤遊戲狀態
+  try {
+    const bgSheet = ss.getSheetByName(BOARD_GAME_STATE_SHEET);
+    const bgLastRow = bgSheet.getLastRow();
+    if (bgLastRow >= 2) {
+      const bgValues = bgSheet.getRange(2, 1, 1, bgSheet.getLastColumn()).getValues()[0];
+      const bgHeaders = bgSheet.getRange(1, 1, 1, bgSheet.getLastColumn()).getValues()[0];
+      const bgStateIndex = bgHeaders.indexOf('game_json');
+      if (bgStateIndex >= 0 && bgValues[bgStateIndex]) {
+        state.boardGame = JSON.parse(bgValues[bgStateIndex]);
+      }
+    }
+  } catch (e) {
+    Logger.log("Warning: Could not load board game state: " + e.message);
+  }
+
+  return { 
+    ok: true, 
+    backendVersion: BACKEND_VERSION, 
+    savedAt: savedAtIndex >= 0 ? values[savedAtIndex] : '', 
+    state: state 
+  };
 }
 
 function appendBattleLog(log, ssArg) {
@@ -255,6 +301,7 @@ function getStats() {
       battleLogRows: Math.max(0, ss.getSheetByName(BATTLE_LOGS_SHEET).getLastRow() - 1),
       actionLogRows: Math.max(0, ss.getSheetByName(ACTION_LOGS_SHEET).getLastRow() - 1),
       summaryRows: Math.max(0, ss.getSheetByName(LOG_SUMMARY_SHEET).getLastRow() - 1),
+      boardGameStateRows: Math.max(0, ss.getSheetByName(BOARD_GAME_STATE_SHEET).getLastRow() - 1),
     },
     limits: { battleLogs: MAX_BATTLE_LOG_ROWS, actionLogs: MAX_ACTION_LOG_ROWS },
   };
@@ -266,6 +313,7 @@ function setupSheets_() {
   ensureSheet_(ss, BATTLE_LOGS_SHEET, BATTLE_LOG_HEADERS);
   ensureSheet_(ss, ACTION_LOGS_SHEET, ACTION_LOG_HEADERS);
   ensureSheet_(ss, LOG_SUMMARY_SHEET, LOG_SUMMARY_HEADERS);
+  ensureSheet_(ss, BOARD_GAME_STATE_SHEET, BOARD_GAME_STATE_HEADERS); // 新增
   return ss;
 }
 
