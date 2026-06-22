@@ -26,7 +26,7 @@ namespace CraneTranscript
     internal sealed class MainForm : Form
     {
         private const int SegmentSeconds = 1800;
-        private readonly string appRoot = AppDomain.CurrentDomain.BaseDirectory;
+        private readonly string appRoot = Path.GetDirectoryName(typeof(MainForm).Assembly.Location);
         private readonly BackgroundWorker worker = new BackgroundWorker();
         private readonly object processLock = new object();
 
