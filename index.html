@@ -1,650 +1,331 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>凌鶴昇 Leo Ling | AI Architect Portfolio</title>
-  <meta name="description" content="凌鶴昇 Leo Ling 的 AI 數位整合架構師個人作品集測試頁。">
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #111827;
-      --muted: #667085;
-      --soft: #f5f7fa;
-      --line: #e3e7ee;
-      --panel: #ffffff;
-      --teal: #0f766e;
-      --teal-dark: #134e4a;
-      --gold: #c68b2e;
-      --coral: #d86f55;
-      --shadow: 0 22px 70px rgba(17, 24, 39, 0.12);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: #fbfcfd;
-      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
-      line-height: 1.7;
-    }
-
-    a {
-      color: inherit;
-    }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      border-bottom: 1px solid rgba(227, 231, 238, 0.8);
-      background: rgba(251, 252, 253, 0.86);
-      backdrop-filter: blur(18px);
-    }
-
-    .nav {
-      width: min(1180px, calc(100% - 32px));
-      min-height: 68px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 900;
-      letter-spacing: 0;
-      white-space: nowrap;
-    }
-
-    .brand-mark {
-      width: 36px;
-      height: 36px;
-      display: grid;
-      place-items: center;
-      border-radius: 8px;
-      color: #fff;
-      background: var(--teal-dark);
-      font-weight: 900;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      color: #475467;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-    }
-
-    .nav-links a:hover {
-      color: var(--teal);
-    }
-
-    .hero {
-      min-height: calc(100vh - 68px);
-      display: grid;
-      align-items: center;
-      padding: 54px 0 60px;
-      background:
-        linear-gradient(90deg, rgba(251, 252, 253, 0.92) 0%, rgba(251, 252, 253, 0.72) 44%, rgba(17, 24, 39, 0.24) 100%),
-        url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=84") center / cover;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .hero-inner {
-      width: min(1180px, calc(100% - 32px));
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 390px;
-      gap: 54px;
-      align-items: end;
-    }
-
-    .eyebrow {
-      width: fit-content;
-      margin: 0 0 18px;
-      padding: 7px 12px;
-      border: 1px solid rgba(15, 118, 110, 0.22);
-      border-radius: 999px;
-      color: var(--teal-dark);
-      background: rgba(255, 255, 255, 0.7);
-      font-size: 14px;
-      font-weight: 900;
-    }
-
-    h1 {
-      max-width: 860px;
-      margin: 0;
-      font-size: clamp(44px, 6.8vw, 86px);
-      line-height: 1.03;
-      letter-spacing: 0;
-    }
-
-    .lead {
-      max-width: 690px;
-      margin: 24px 0 0;
-      color: #344054;
-      font-size: clamp(18px, 2vw, 22px);
-      font-weight: 500;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 34px;
-    }
-
-    .button {
-      min-height: 48px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 0 20px;
-      border: 1px solid var(--teal-dark);
-      border-radius: 8px;
-      color: #fff;
-      background: var(--teal-dark);
-      text-decoration: none;
-      font-weight: 900;
-      box-shadow: 0 10px 24px rgba(19, 78, 74, 0.18);
-    }
-
-    .button.secondary {
-      color: var(--teal-dark);
-      background: rgba(255, 255, 255, 0.74);
-      box-shadow: none;
-    }
-
-    .signal-panel {
-      padding: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.62);
-      border-radius: 8px;
-      color: #fff;
-      background: rgba(17, 24, 39, 0.72);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
-    }
-
-    .signal-panel p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.72);
-      font-size: 14px;
-    }
-
-    .signal-panel strong {
-      display: block;
-      margin: 10px 0 18px;
-      font-size: 28px;
-      line-height: 1.25;
-    }
-
-    .signal-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .signal {
-      display: grid;
-      grid-template-columns: 42px 1fr;
-      gap: 12px;
-      align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.16);
-    }
-
-    .signal b {
-      color: #fff;
-      font-size: 22px;
-      line-height: 1;
-    }
-
-    .signal span {
-      color: rgba(255, 255, 255, 0.76);
-      font-size: 14px;
-    }
-
-    main {
-      width: min(1180px, calc(100% - 32px));
-      margin: 0 auto;
-    }
-
-    section {
-      padding: 78px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .section-head {
-      display: grid;
-      grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.55fr);
-      gap: 40px;
-      align-items: end;
-      margin-bottom: 30px;
-    }
-
-    .label {
-      margin: 0 0 10px;
-      color: var(--coral);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    h2 {
-      margin: 0;
-      font-size: clamp(30px, 4vw, 48px);
-      line-height: 1.14;
-      letter-spacing: 0;
-    }
-
-    .section-copy {
-      margin: 0;
-      color: var(--muted);
-      font-size: 17px;
-    }
-
-    .expertise-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .card {
-      min-height: 250px;
-      position: relative;
-      overflow: hidden;
-      padding: 26px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      box-shadow: 0 16px 46px rgba(17, 24, 39, 0.06);
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--teal), var(--gold), var(--coral));
-    }
-
-    .card-number {
-      color: rgba(15, 118, 110, 0.24);
-      font-size: 42px;
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    .card h3 {
-      margin: 34px 0 12px;
-      font-size: 22px;
-      line-height: 1.28;
-    }
-
-    .card p {
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .work-list {
-      display: grid;
-      gap: 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .work-item {
-      display: grid;
-      grid-template-columns: 140px minmax(0, 1fr) 170px;
-      gap: 24px;
-      align-items: start;
-      padding: 28px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .work-index {
-      color: var(--teal);
-      font-weight: 900;
-    }
-
-    .work-item h3 {
-      margin: 0 0 8px;
-      font-size: 24px;
-      line-height: 1.28;
-    }
-
-    .work-item p {
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .tag {
-      width: fit-content;
-      padding: 7px 10px;
-      border: 1px solid rgba(198, 139, 46, 0.3);
-      border-radius: 999px;
-      color: #7a541b;
-      background: #fff8eb;
-      font-size: 13px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .profile-band {
-      display: grid;
-      grid-template-columns: minmax(0, 0.88fr) minmax(320px, 0.62fr);
-      gap: 34px;
-      align-items: stretch;
-    }
-
-    .statement {
-      padding: 38px;
-      border-radius: 8px;
-      color: #fff;
-      background: #111827;
-    }
-
-    .statement h2 {
-      max-width: 780px;
-    }
-
-    .statement p {
-      max-width: 720px;
-      margin: 22px 0 0;
-      color: rgba(255, 255, 255, 0.76);
-      font-size: 18px;
-    }
-
-    .facts {
-      display: grid;
-      gap: 14px;
-    }
-
-    .fact {
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .fact b {
-      display: block;
-      color: var(--teal-dark);
-      font-size: 28px;
-      line-height: 1;
-    }
-
-    .fact span {
-      display: block;
-      margin-top: 8px;
-      color: var(--muted);
-    }
-
-    .contact {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 32px;
-      align-items: center;
-      padding-bottom: 74px;
-    }
-
-    .contact .lead {
-      margin-top: 14px;
-      font-size: 18px;
-    }
-
-    .footer {
-      padding: 28px 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    @media (max-width: 900px) {
-      .nav {
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 14px 0;
-      }
-
-      .nav-links {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .hero {
-        min-height: auto;
-        padding: 42px 0 52px;
-      }
-
-      .hero-inner,
-      .section-head,
-      .profile-band,
-      .contact {
-        grid-template-columns: 1fr;
-      }
-
-      .signal-panel {
-        max-width: 520px;
-      }
-
-      .expertise-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .work-item {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
-      .tag {
-        white-space: normal;
-      }
-
-      .statement {
-        padding: 28px;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .brand {
-        white-space: normal;
-      }
-
-      .nav-links {
-        gap: 12px;
-        font-size: 13px;
-      }
-
-      h1 {
-        font-size: 42px;
-      }
-
-      section {
-        padding: 58px 0;
-      }
-
-      .actions {
-        flex-direction: column;
-      }
-
-      .button {
-        width: 100%;
-      }
-    }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b4f4a" />
+  <meta name="description" content="凌鶴昇 Leo Ling｜AI 數位整合架構者。整合海量資料、跨國協作、建築視覺化、網站內容與非營利專案流程。" />
+  <meta property="og:title" content="凌鶴昇 Leo Ling｜AI 數位整合架構者" />
+  <meta property="og:description" content="把分散的資料、空間、內容與流程，整理成可搜尋、可溝通、可執行的數位系統。" />
+  <meta property="og:type" content="website" />
+  <title>凌鶴昇 Leo Ling｜AI 數位整合架構者</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+
   <header class="site-header">
     <nav class="nav" aria-label="主選單">
-      <div class="brand">
-        <span class="brand-mark">L</span>
-        <span>Leo Ling | AI Architect</span>
-      </div>
-      <div class="nav-links">
-        <a href="#expertise">專長</a>
-        <a href="#projects">作品</a>
-        <a href="#profile">定位</a>
-        <a href="#contact">聯絡</a>
+      <a class="brand" href="#top" aria-label="回到首頁">
+        <span class="brand-mark">HX</span>
+        <span class="brand-copy">
+          凌鶴昇 Leo Ling
+          <small>AI Digital Integration Architect</small>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="開啟選單">☰</button>
+
+      <div class="nav-links" id="site-menu">
+        <a href="#services">能力</a>
+        <a href="#cases">實務案例</a>
+        <a href="#method">工作方法</a>
+        <a href="#positioning">定位</a>
+        <a href="#contact">合作</a>
       </div>
     </nav>
   </header>
 
-  <div class="hero">
+  <div class="hero" id="top">
     <div class="hero-inner">
-      <div>
-        <p class="eyebrow">AI 數位整合架構師 / 創意總監</p>
-        <h1>把生成式 AI、數位孿生與建築流程整合成可落地的工作系統</h1>
-        <p class="lead">這是一個 GitHub Pages 測試頁面。放到你的 repository 根目錄後，它就會以公開網址呈現，適合先驗證平台部署流程。</p>
-        <div class="actions">
-          <a class="button" href="#projects">查看測試作品</a>
-          <a class="button secondary" href="https://github.com/linhersing/Leo-AI-Architect-Portfolio">回到 GitHub</a>
+      <div class="reveal">
+        <p class="eyebrow">跨領域系統整合者 × 產品負責人 × 實務型架構規劃者</p>
+        <h1>我把混亂，整理成<span>能運作的系統</span>。</h1>
+        <p class="hero-lead">
+          我運用 AI、數位工具與設計整合能力，協助海外教育基地、非營利組織與複雜專案，
+          把分散的資料、建築資訊、網站內容與協作流程，轉化為可搜尋、可溝通、可執行的工作系統。
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="#cases">查看實務案例</a>
+          <a class="button secondary" href="#positioning">了解我的定位</a>
         </div>
       </div>
 
-      <aside class="signal-panel" aria-label="作品集摘要">
-        <p>Portfolio Preview</p>
-        <strong>面向建築、AI 與數位轉型的個人品牌入口</strong>
-        <p>這一版先聚焦「質感、可信任、可公開展示」。之後可以再補上作品圖片、案例頁、履歷 PDF 與聯絡表單。</p>
-        <div class="signal-list">
+      <aside class="hero-panel reveal" aria-label="專業摘要">
+        <p class="panel-kicker">Core Value</p>
+        <h2>不是只會使用工具，而是把工具變成可落地的方法。</h2>
+        <p>
+          我的工作常發生在資訊分散、資源有限、跨國協作與現場條件複雜的環境中。
+          真正的價值，不是再多做一個檔案，而是讓整個專案變得更清楚、更穩定、更容易延續。
+        </p>
+        <div class="signal-grid">
           <div class="signal">
-            <b>14+</b>
-            <span>年設計與產業整合經驗</span>
+            <b>20+ 年</b>
+            <span>網頁、數位內容與實務整合經驗累積</span>
+          </div>
+          <div class="signal">
+            <b>6 年</b>
+            <span>中國大陸與尼泊爾海外教育及營運經驗</span>
           </div>
           <div class="signal">
             <b>AI</b>
-            <span>生成式工具、Prompt 與流程架構</span>
+            <span>Codex、Python、GPT、Gemini 與工作流整合</span>
           </div>
           <div class="signal">
-            <b>DT</b>
-            <span>Digital Twin 與建築協作研究</span>
+            <b>Design</b>
+            <span>建築視覺化、網站、內容與跨域溝通</span>
           </div>
         </div>
       </aside>
     </div>
   </div>
 
-  <main>
-    <section id="expertise">
-      <div class="section-head">
-        <div>
-          <p class="label">Expertise</p>
-          <h2>把複雜技術整理成團隊真的用得上的流程</h2>
-        </div>
-        <p class="section-copy">從 AI 工具選型、視覺化提案到數位孿生應用，把技術能力轉譯成可被理解、可被採用、可被持續迭代的工作系統。</p>
-      </div>
-
-      <div class="expertise-grid">
-        <article class="card">
-          <div class="card-number">01</div>
-          <h3>AI 工作流整合</h3>
-          <p>將 Prompt Engineering、知識管理與自動化流程組合成團隊能穩定使用的工作方法。</p>
-        </article>
-        <article class="card">
-          <div class="card-number">02</div>
-          <h3>建築與數位孿生</h3>
-          <p>以建築設計背景串接 3D、BIM、視覺化與 Digital Twin 的應用場景。</p>
-        </article>
-        <article class="card">
-          <div class="card-number">03</div>
-          <h3>品牌與內容策略</h3>
-          <p>把專業經歷整理成清楚的個人品牌敘事，讓客戶快速理解你的價值。</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="projects">
-      <div class="section-head">
-        <div>
-          <p class="label">Selected Demos</p>
-          <h2>測試作品區</h2>
-        </div>
-        <p class="section-copy">先用三個示範案例建立網站架構。等你確認風格後，我們可以把每一項擴充成正式作品頁。</p>
-      </div>
-
-      <div class="work-list">
-        <article class="work-item">
-          <div class="work-index">Demo 01</div>
+  <main id="main">
+    <section id="services">
+      <div class="section-shell">
+        <div class="section-head reveal">
           <div>
-            <h3>AI 建築提案流程</h3>
-            <p>示範如何從需求訪談、概念草案、視覺參考到簡報產出建立一套 AI 輔助流程。</p>
+            <p class="section-label">Capabilities</p>
+            <h2>五種能力，服務同一件事：讓複雜專案變得可理解、可操作。</h2>
           </div>
-          <div class="tag">AI Workflow</div>
-        </article>
-        <article class="work-item">
-          <div class="work-index">Demo 02</div>
-          <div>
-            <h3>數位孿生資料整合</h3>
-            <p>展示建築模型、現場資訊與營運資料如何被整理成可追蹤的數位介面。</p>
-          </div>
-          <div class="tag">Digital Twin</div>
-        </article>
-        <article class="work-item">
-          <div class="work-index">Demo 03</div>
-          <div>
-            <h3>個人作品集網站</h3>
-            <p>這個頁面就是第一版測試，用來確認 GitHub Pages 是否能公開瀏覽。</p>
-          </div>
-          <div class="tag">GitHub Pages</div>
-        </article>
-      </div>
-    </section>
-
-    <section id="profile">
-      <div class="profile-band">
-        <div class="statement">
-          <p class="label">Positioning</p>
-          <h2>跨域 AI 數位整合架構師，專注生成式 AI 與數位孿生的實務落地。</h2>
-          <p>我想把 AI 技術與建築美學結合，創造具備數位主權的未來空間。這個網站會是作品、研究、服務與合作機會的公開入口。</p>
+          <p class="section-intro">
+            我的跨領域不是技能堆疊，而是一條長期累積的共同主線：用電腦、設計與 AI，
+            處理真實世界裡散亂、龐大而且難以協作的資訊。
+          </p>
         </div>
-        <div class="facts" aria-label="專業摘要">
-          <div class="fact">
-            <b>14 年</b>
-            <span>設計產業經驗，含海外大型專案執行。</span>
+
+        <div class="service-grid">
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">◎</div>
+            <h3>AI 資料整理與知識導覽</h3>
+            <p>運用 Codex、Python 與索引邏輯，整理多年累積的照片、文件、表格與專案紀錄，建立容易搜尋與理解的資料入口。</p>
+          </article>
+
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">⌂</div>
+            <h3>建築與空間視覺整合</h3>
+            <p>串接 AutoCAD、SketchUp、3ds Max、BIM 概念與渲染流程，將空間構想轉化為跨專業都能理解的溝通材料。</p>
+          </article>
+
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">↗</div>
+            <h3>網站與數位內容建置</h3>
+            <p>整合 WordPress、HTML、CSS、JavaScript、圖像、影片與文案，建立能展示成果、持續更新並支援專案推進的網站。</p>
+          </article>
+
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">▦</div>
+            <h3>非營利計畫與補助案管理</h3>
+            <p>協助整理公告、申請條件、預算、佐證、歷史版本與計畫進度，讓補助案不只寫得完整，也能被追蹤與延續。</p>
+          </article>
+
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">∞</div>
+            <h3>跨國協作與現場整合</h3>
+            <p>結合海外教學、咖啡店營運、SOP 建立、施工協調與低資源場域經驗，將計畫轉化為現場真正做得出來的方案。</p>
+          </article>
+
+          <article class="service-card reveal">
+            <div class="service-icon" aria-hidden="true">HX</div>
+            <h3>產品思維與流程架構</h3>
+            <p>不只完成任務，也從使用者體驗、資料結構、檔案治理與維護成本出發，設計能長期使用的數位工作系統。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="cases">
+      <div class="section-shell">
+        <div class="section-head reveal">
+          <div>
+            <p class="section-label">Selected Cases</p>
+            <h2>從真實問題出發，而不是先拿工具找用途。</h2>
           </div>
-          <div class="fact">
-            <b>HX ZIon</b>
-            <span>構組化角色引擎、專業 AI 與專業領域高效對話。</span>
+          <p class="section-intro">
+            以下案例共同呈現我的工作模式：先理解現場混亂從哪裡來，再把資料、流程、介面與人重新接起來。
+          </p>
+        </div>
+
+        <div class="case-list">
+          <article class="case-card reveal">
+            <div class="case-index">Case 01</div>
+            <div>
+              <h3>萬軍多年海量資料整理與導覽</h3>
+              <p>
+                面對長期累積、命名不一且分散於不同位置的照片與文件，我運用 Codex、Python、GitHub 與實體檔案協作，
+                建立更容易搜尋、維護與交接的資料架構。這不是單純搬檔案，而是重新設計組織理解自己歷史資料的方式。
+              </p>
+            </div>
+            <div class="case-meta">
+              <span class="tag">Codex</span>
+              <span class="tag">Python</span>
+              <span class="tag">資料治理</span>
+            </div>
+          </article>
+
+          <article class="case-card reveal">
+            <div class="case-index">Case 02</div>
+            <div>
+              <h3>金古協會補助案與專案進度系統</h3>
+              <p>
+                將補助公告、雲端硬碟、本機歸檔、網站更新與計畫進度串成可追蹤的專案系統，
+                降低資料散落、版本混亂與期限遺漏的風險，讓計畫撰寫與執行不再依賴單一人的記憶。
+              </p>
+            </div>
+            <div class="case-meta">
+              <span class="tag">非營利專案</span>
+              <span class="tag">補助案</span>
+              <span class="tag">進度管理</span>
+            </div>
+          </article>
+
+          <article class="case-card reveal">
+            <div class="case-index">Case 03</div>
+            <div>
+              <h3>海外教育基地與摩西計畫</h3>
+              <p>
+                結合海外教育基地經驗、建築視覺化、跨國溝通與數位孿生研究，
+                將空間設計、施工資訊、現場回報與提案內容整理成更容易理解與決策的協作介面。
+              </p>
+            </div>
+            <div class="case-meta">
+              <span class="tag">建築視覺化</span>
+              <span class="tag">Digital Twin</span>
+              <span class="tag">跨國協作</span>
+            </div>
+          </article>
+
+          <article class="case-card reveal">
+            <div class="case-index">Lab 01</div>
+            <div>
+              <h3>自製棋盤遊戲編輯器</h3>
+              <p>
+                透過 AI 協作與前端技術，把策略遊戲、規則設計與介面想法轉化為可操作的原型，
+                作為數位產品、互動教材與創意工具的實驗場。
+              </p>
+              <a class="case-link" href="./board-game-maker/">開啟專案 →</a>
+            </div>
+            <div class="case-meta">
+              <span class="tag">Web App</span>
+              <span class="tag">Product Lab</span>
+            </div>
+          </article>
+
+          <article class="case-card reveal">
+            <div class="case-index">Lab 02</div>
+            <div>
+              <h3>邊境村莊策略遊戲原型</h3>
+              <p>
+                將長期累積型策略遊戲的偏好，轉化成可測試的網頁遊戲原型，探索 AI 輔助開發、規則系統與產品迭代的可能性。
+              </p>
+              <a class="case-link" href="./travian-mvp/">開啟專案 →</a>
+            </div>
+            <div class="case-meta">
+              <span class="tag">Game Prototype</span>
+              <span class="tag">AI Coding</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="section-shell">
+        <div class="section-head reveal">
+          <div>
+            <p class="section-label">Method</p>
+            <h2>我的工作不是「幫忙做完」，而是把問題拆到能被管理。</h2>
           </div>
-          <div class="fact">
-            <b>Digital Twin</b>
-            <span>專注建築協作中的生成式 AI 與數位孿生應用。</span>
+          <p class="section-intro">
+            這套方法適合資料量大、跨單位、跨國、期限明確、又需要長期維護的專案。
+          </p>
+        </div>
+
+        <div class="method-grid">
+          <article class="method-step reveal">
+            <span class="method-number">01</span>
+            <h3>盤點現況</h3>
+            <p>確認人、資料、工具、期限、現場限制與真正的痛點，避免一開始就被工具帶著走。</p>
+          </article>
+          <article class="method-step reveal">
+            <span class="method-number">02</span>
+            <h3>建立結構</h3>
+            <p>設計命名、分類、版本、資料夾、網站欄位與角色權限，讓資訊有一致的骨架。</p>
+          </article>
+          <article class="method-step reveal">
+            <span class="method-number">03</span>
+            <h3>做成介面</h3>
+            <p>把後端邏輯轉譯成網站、導覽、圖像、報表或操作流程，讓其他人不必理解程式也能使用。</p>
+          </article>
+          <article class="method-step reveal">
+            <span class="method-number">04</span>
+            <h3>交付並延續</h3>
+            <p>補上文件、SOP、備份與維護方式，降低系統只靠單一個人運作的風險。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="positioning">
+      <div class="section-shell">
+        <div class="positioning-wrap">
+          <div class="positioning-copy reveal">
+            <p class="section-label">Positioning</p>
+            <h2>我是 AI 數位整合架構者，不是單一工具的操作員。</h2>
+            <p>
+              我真正擅長的，是在設計、建築、資料、網站、內容與專案管理之間建立連結。
+              我長期處理的是那些「每個人都知道重要，卻沒有人知道該怎麼整理」的問題，
+              並把它們轉化為能被團隊理解、採用與持續改善的系統。
+            </p>
+            <p>
+              AI 對我而言不是捷徑，而是一個放大器。它放大的不是指令技巧，而是多年累積的現場經驗、判斷力與整合能力。
+            </p>
+          </div>
+
+          <div class="metrics" aria-label="專業摘要">
+            <div class="metric reveal">
+              <b>資管碩士</b>
+              <span>研究生成式 AI、數位孿生與建築協作的實務應用。</span>
+            </div>
+            <div class="metric reveal">
+              <b>海外 6 年</b>
+              <span>教學、營運、SOP、空間設計與跨文化協作的第一線經驗。</span>
+            </div>
+            <div class="metric reveal">
+              <b>HX Zion</b>
+              <span>持續發展角色化 AI、知識管理與個人工作系統的整合框架。</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="contact" class="contact">
-      <div>
-        <p class="label">Next Step</p>
-        <h2>開始連結</h2>
-        <p class="lead">等這個測試頁成功上線後，就可以再逐步加入作品圖片、服務項目、履歷、案例頁與聯絡表單。</p>
+    <section id="contact">
+      <div class="section-shell">
+        <div class="contact-card reveal">
+          <div>
+            <p class="section-label">Collaboration</p>
+            <h2>你的資料很多、專案很複雜，但不代表它只能一直混亂。</h2>
+            <p>
+              適合合作的題目包括：AI 資料整理、網站與內容整合、海外教育基地、非營利專案、建築視覺化、數位工作流與概念原型開發。
+            </p>
+          </div>
+          <div class="contact-actions">
+            <a class="button dark" href="https://github.com/linhersing" target="_blank" rel="noreferrer">查看 GitHub</a>
+            <a class="button secondary" href="#top">回到首頁</a>
+          </div>
+        </div>
       </div>
-      <a class="button" href="mailto:hello@example.com">聯絡我</a>
     </section>
-
-    <footer class="footer">
-      © 2026 Leo Ling. GitHub Pages deployment test.
-    </footer>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>© <span data-year>2026</span> 凌鶴昇 Leo Ling. Built as a living portfolio.</span>
+      <a href="https://github.com/linhersing/Leo-AI-Architect-Portfolio" target="_blank" rel="noreferrer">Repository</a>
+    </div>
+  </footer>
+
+  <script src="./script.js" defer></script>
 </body>
 </html>
