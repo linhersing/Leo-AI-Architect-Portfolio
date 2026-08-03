@@ -1,0 +1,17 @@
+鶴昇逐字稿使用下列第三方開源軟體：
+
+1. whisper.cpp
+   Copyright (c) 2023-2025 The ggml authors
+   License: MIT
+   Source: https://github.com/ggml-org/whisper.cpp
+
+2. FFmpeg
+   License: GNU LGPL/GPL（依隨附建置內容）
+   Source: https://ffmpeg.org/
+   Windows build: https://www.gyan.dev/ffmpeg/builds/
+
+3. OpenAI Whisper model
+   Source: https://github.com/openai/whisper
+   Converted model distribution: https://huggingface.co/ggerganov/whisper.cpp
+
+完整授權資訊請參閱上述專案來源。
