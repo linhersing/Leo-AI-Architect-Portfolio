@@ -1,0 +1,30 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f9f7"><meta name="description" content="高鐵 AI 動態研究展示。以互動模擬與研究資料讓人更容易理解旅客需求、候車與運能的關係；非台灣高鐵官方。"><title>研究成果｜高鐵 AI 動態研究</title><link rel="stylesheet" href="./site.css"></head><body><header class="site-head"><div class="wrap head-inner"><a class="logo" href="./index.html"><span class="logo-mark" aria-hidden="true">AI</span><span>高鐵 AI 動態研究</span></a><span class="draft-chip">研究展示 V0.2</span></div><nav class="site-nav" aria-label="主要導覽"><div class="wrap nav-scroll"><a href="./index.html">首頁</a><a href="./simulation.html">動態體驗</a><a href="./results.html" aria-current="page">研究成果</a><a href="./framework.html">模型架構</a><a href="./papers.html">研究文件</a></div></nav></header><main>
+<section class="wrap page-head"><div class="kicker">02｜研究成果與圖表</div><h1>這些數字，想說明什麼？</h1><p>朱老師的第一份研究提供三組情境假設，以及蒙地卡羅敏感度示範。這些數字適合用來說明研究方向，但不能直接當作真實高鐵改善成效。</p></section>
+<section class="wrap">
+<div class="notice"><strong>重要：</strong>以下「現行情境／規劃情境」數值是研究稿中的策略假設，非現場量測或高鐵官方績效；百分比僅為假設數值的相對變化。</div>
+<h2 class="section-title">研究提出的三項改善假設</h2>
+<div class="three-col" style="margin:20px 0 32px">
+  <div class="metric-card"><div class="value-label">尖峰月台滯留人數</div><div class="big-number">−70.8%</div><div class="value-detail">約 1,200 → 350 人</div><p class="hint" style="margin:8px 0 0">是假設策略效果，不是實測。</p></div>
+  <div class="metric-card"><div class="value-label">自由座平均排隊時間</div><div class="big-number">−71.4%</div><div class="value-detail">42 → 12 分鐘</div><p class="hint" style="margin:8px 0 0">需取得真實排隊紀錄驗證。</p></div>
+  <div class="metric-card"><div class="value-label">月台人潮清空週期</div><div class="big-number">−53.1%</div><div class="value-detail">160 → 75 秒</div><p class="hint" style="margin:8px 0 0">需統一計時與量測方式。</p></div>
+</div>
+<div class="card" style="margin-bottom:19px">
+  <h2>100,000 次蒙地卡羅敏感度示範</h2><p class="muted small">研究稿中，在已設定的兩組基準利用率與波動分布下，計算超過特定利用率門檻的模擬比例。</p>
+  <div class="bar-key" style="margin:14px 0 10px"><span><i class="key-dot"></i>基準情境</span><span><i class="key-dot alt"></i>規劃情境</span></div>
+  <div class="comparison" role="img" aria-label="利用率高於90%：73.1%比12.8%；利用率高於100%：26.9%比0.6%。">
+    <strong class="small">利用率超過 90%</strong>
+    <div class="bar-row"><span>基準</span><div class="bar-track"><div class="bar-fill" style="width:73.1%"></div></div><b>73.1%</b></div>
+    <div class="bar-row"><span>規劃</span><div class="bar-track"><div class="bar-fill alt" style="width:12.8%"></div></div><b>12.8%</b></div>
+    <strong class="small" style="margin-top:14px">利用率超過 100%</strong>
+    <div class="bar-row"><span>基準</span><div class="bar-track"><div class="bar-fill" style="width:26.9%"></div></div><b>26.9%</b></div>
+    <div class="bar-row"><span>規劃</span><div class="bar-track"><div class="bar-fill alt" style="width:.6%;min-width:3px"></div></div><b>0.6%</b></div>
+  </div>
+  <p class="hint" style="margin:21px 0 0">注意：模型事先把平均利用率的假設基準由 95% 改成 82%，因此規劃情境風險較低，不等於 AI 已實際推算出這樣的改善成果。</p>
+</div>
+<div class="two-col">
+  <div class="card"><h3>示範時採用的關鍵假設</h3><ul class="plain-list"><li>現行情境的基準平均利用率約 95%。</li><li>規劃情境基準平均利用率約 82%。</li><li>需求倍率以平均 1.00、標準差 0.08 的截斷常態分布抽樣。</li><li>可用容量倍率以平均 1.00、標準差 0.03 的截斷常態分布抽樣。</li></ul></div>
+  <div class="card"><h3>正式研究還需要什麼？</h3><ul class="plain-list"><li>實際班表、上下車人數及排隊／月台資料。</li><li>用歷史日期回測需求預測。</li><li>與現行基準方案公平比較。</li><li>符合號誌、車組、站場及人力安全限制。</li></ul></div>
+</div>
+<div class="notice notice-green"><strong>怎麼看待網站的互動模型？</strong>互動頁是讓訪客理解「需求提高、運能不足，排隊可能累積」的教學工具。它與這裡的研究稿 100,000 次模擬是兩件不同的事，兩者不可混為一談。</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;padding:10px 0 44px"><a class="btn btn-primary" href="./simulation.html">操作動態體驗</a><a class="btn btn-secondary" href="./papers.html">閱讀文件與限制</a></div>
+</section></main><footer class="footer"><div class="wrap footer-inner"><div>朱峻廷博士研究構想｜凌鶴昇協助網站試作<br>非台灣高鐵官方網站・不提供行車或安全決策</div><div class="footer-links"><a href="./papers.html">研究限制</a><a href="./simulation.html">互動體驗</a><a href="./index.html">返回首頁</a></div></div></footer></body></html>
