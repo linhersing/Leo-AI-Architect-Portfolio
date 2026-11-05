@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f9f7"><meta name="description" content="高鐵 AI 動態研究展示。以互動模擬與研究資料讓人更容易理解旅客需求、候車與運能的關係；非台灣高鐵官方。"><title>動態體驗｜高鐵 AI 動態研究</title><link rel="stylesheet" href="./site.css"></head><body><header class="site-head"><div class="wrap head-inner"><a class="logo" href="./index.html"><span class="logo-mark" aria-hidden="true">AI</span><span>高鐵 AI 動態研究</span></a><span class="draft-chip">研究展示 V0.2</span></div><nav class="site-nav" aria-label="主要導覽"><div class="wrap nav-scroll"><a href="./index.html">首頁</a><a href="./simulation.html" aria-current="page">動態體驗</a><a href="./results.html">研究成果</a><a href="./framework.html">模型架構</a><a href="./papers.html">研究文件</a></div></nav></header><main>
+<section class="wrap page-head"><div class="kicker">01｜先動手試試</div><h1>看看不同日子，人潮會怎麼變？</h1><p>只要選擇一個情境，就能觀看列車動畫、人潮與需求曲線。想深入研究，再調整參數。</p></section>
+<section class="wrap" aria-label="模擬操作">
+<div class="sim-grid">
+  <div class="controls-column">
+   <div class="card">
+     <h2 style="margin-bottom:8px">選擇情境</h2><p class="muted small">先點一個即可開始，其他設定可以先不管。</p>
+     <div class="scenario-select" role="group" aria-label="切換營運情境">
+       <button class="scenario" data-scenario="weekday" aria-pressed="false" type="button">平日</button>
+       <button class="scenario" data-scenario="weekend" aria-pressed="true" type="button">假日</button>
+       <button class="scenario" data-scenario="holiday" aria-pressed="false" type="button">連假</button>
+     </div>
+     <p class="hint" style="margin:13px 0 0">你可以試試「連假」，觀察需求大增時，模擬中的排隊量有什麼改變。</p>
+   </div>
+   <details class="advanced" style="margin-top:14px"><summary>進階調整（選填）</summary>
+     <div class="control"><div class="control-head"><label for="demandRange">旅客需求倍率</label><output id="demandValue" for="demandRange">100%</output></div><input id="demandRange" type="range" min="70" max="145" step="5" value="100"><p>旅客越多，需求曲線會越高。</p></div>
+     <div class="control"><div class="control-head"><label for="supplyRange">可用運能倍率</label><output id="supplyValue" for="supplyRange">100%</output></div><input id="supplyRange" type="range" min="70" max="135" step="5" value="100"><p>只是假設可用容量改變，不代表真實高鐵能直接增加班次。</p></div>
+     <button id="reset" class="btn btn-light btn-block" type="button">還原初始數值</button>
+   </details>
+  </div>
+  <div class="scene-card">
+    <div class="scene-head"><h2>列車與車站人流</h2><span class="tag"><span id="currentScenario">假日</span>模式</span></div>
+    <div class="scene-layout">
+      <div id="scene" class="rail-scene" aria-label="簡化列車行駛示意"><div class="rail-line"></div><span class="rail-stop" data-label="站 A" style="left:9%"></span><span class="rail-stop" data-label="站 B" style="left:50%"></span><span class="rail-stop" data-label="站 C" style="left:90%"></span><div class="rail-train" aria-hidden="true"><span></span><span></span><span></span></div></div>
+      <div class="crowd-box"><strong>車站人潮示意</strong><div class="people" id="people" aria-hidden="true"></div><p id="crowdCaption" class="small muted" style="margin:9px 0 0">人潮變化示意</p></div>
+    </div>
+    <div class="scene-foot"><span>圖像是動畫，不是即時列車資訊。</span><button id="toggleAnimation" class="microbutton" type="button" aria-pressed="false">暫停動畫</button></div>
+  </div>
+  <div class="metrics" aria-live="polite">
+    <div class="stat"><span>尖峰需求／運能</span><strong id="peak">—</strong><small>模型比例</small></div>
+    <div class="stat"><span>最高排隊累積</span><strong id="queue">—</strong><small>示意指數</small></div>
+    <div class="stat"><span>高負載時段</span><strong id="highHours">—</strong><small>18 個示意時段中</small></div>
+  </div>
+</div>
+<div class="card" style="margin-top:18px">
+ <div class="split-title"><h2 style="margin-bottom:0">一天內的需求與運能</h2><span class="tag">06:00–23:00</span></div>
+ <div class="chart-key" style="margin:13px 0"><span><i style="background:#79aadd"></i>旅客需求</span><span><i style="background:#16877f"></i>服務運能</span></div>
+ <svg id="trend" viewBox="0 0 760 245" role="img" class="chart" aria-label="旅客需求與運能變化曲線"></svg>
+ <p class="hint" style="margin:9px 0 0">縱軸是自訂示意指數，並非真實乘客人數或高鐵時刻表。</p>
+</div>
+<div class="callout" style="margin-top:17px"><strong id="interpretTitle">情境解讀</strong><p id="interpret" style="margin:5px 0 0">請選擇情境。</p></div>
+<div class="notice"><strong>提醒：</strong>這是一個簡化的教學模型。圖表、排隊指數和情境倍率皆為自行設定的假設，不代表朱老師研究中的蒙地卡羅模擬結果，也不是台灣高鐵實測改善。</div>
+<div class="two-col" style="margin:22px 0 42px"><a href="./results.html" class="tile"><span class="tile-ico">📊</span><h3>接著看研究成果</h3><p>認識老師文件中的數據與比較圖。</p><span class="more">前往研究成果 →</span></a><a href="./framework.html" class="tile"><span class="tile-ico">🧩</span><h3>了解模型怎麼運作</h3><p>看看四個模型模組與簡化排隊公式。</p><span class="more">前往模型架構 →</span></a></div>
+</section>
+</main><footer class="footer"><div class="wrap footer-inner"><div>朱峻廷博士研究構想｜凌鶴昇協助網站試作<br>非台灣高鐵官方網站・不提供行車或安全決策</div><div class="footer-links"><a href="./papers.html">研究限制</a><a href="./simulation.html">互動體驗</a><a href="./index.html">返回首頁</a></div></div></footer><script src="./simulation.js" defer></script></body></html>
